@@ -1,0 +1,10 @@
+{
+  "name": "llm-wiki",
+  "version": "0.1.0",
+  "description": "키워드·파일·URL로 LLM과 대화하며 공부하고, 이해 수준(SOLO 0~4)과 오개념을 Obsidian 호환 위키에 기록하는 /add skill",
+  "author": {
+    "name": "Doggy-Footprint"
+  },
+  "repository": "https://github.com/Doggy-Footprint/llm-wiki-plugin",
+  "license": "MIT"
+}

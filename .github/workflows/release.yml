@@ -1,0 +1,32 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  test-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: test
+        run: >
+          PYTHONPATH=skills/add:scripts uv run --no-project --with pytest --with pytest-cov
+          --with 'markitdown[pdf,docx,pptx]==0.1.9'
+          python -m pytest tests --cov=learn --cov=build_zip --cov-branch --cov-fail-under=90
+      - name: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version=$(python3 -c "import json; print(json.load(open('.claude-plugin/plugin.json'))['version'])")
+          tag="v${version}"
+          if gh release view "$tag" >/dev/null 2>&1 || git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null 2>&1; then
+            echo "${tag} already exists; skipping release"
+            exit 0
+          fi
+          python3 scripts/build_zip.py --out dist/llm-wiki-add.zip
+          gh release create "$tag" dist/llm-wiki-add.zip --target "$GITHUB_SHA" --title "$tag" --generate-notes
