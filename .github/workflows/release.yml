@@ -28,5 +28,5 @@ jobs:
             echo "${tag} already exists; skipping release"
             exit 0
           fi
-          python3 scripts/build_zip.py --out dist/llm-wiki-add.zip
-          gh release create "$tag" dist/llm-wiki-add.zip --target "$GITHUB_SHA" --title "$tag" --generate-notes
+          python3 scripts/build_zip.py --out dist/wiki-add.zip
+          gh release create "$tag" dist/wiki-add.zip --target "$GITHUB_SHA" --title "$tag" --generate-notes

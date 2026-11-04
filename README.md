@@ -41,7 +41,7 @@
 
 채팅에는 위키가 없으므로 zip skill로 대화하고 결과 파일을 가져온다.
 
-1. [Releases](https://github.com/Doggy-Footprint/llm-wiki-plugin/releases)에서 `llm-wiki-add.zip`을 받는다 (직접 만들려면 `python scripts/build_zip.py`).
+1. [Releases](https://github.com/Doggy-Footprint/llm-wiki-plugin/releases)에서 `wiki-add.zip`을 받는다 (직접 만들려면 `python scripts/build_zip.py`).
 2. PC 웹 claude.ai의 Settings → Capabilities(또는 Skills)에서 zip을 업로드한다. 업로드한 skill은 모바일 앱에서도 쓸 수 있다. 코드 실행을 켜 두면 결과 파일을 자동으로 만들고, 꺼져 있으면 같은 형식의 텍스트를 보여 준다.
 3. 채팅에서 주제를 말하면 같은 방식으로 진단·대화한 뒤 `<날짜>-<제목>.learn.md` 결과 파일을 만든다.
 4. 결과 파일을 위키로 가져온다. Claude Code에서 `/add import <파일>`을 실행하거나, 위키 저장소를 쓰는 환경이면 Google Drive의 `LLM-wiki-inbox`에 저장해 `/ingest`가 가져가게 한다.

@@ -12,7 +12,7 @@ import build_zip
 from learn_support import PLUGIN_ROOT, SKILL_DIR, TEMPLATE
 
 FILES = ["SKILL.md", "learn.py", "concept.md", "claude-ai.md"]
-EXPECTED = {f"llm-wiki-add/{f}" for f in FILES}
+EXPECTED = {f"wiki-add/{f}" for f in FILES}
 
 
 def copy_plugin(tmp_path) -> Path:
@@ -26,16 +26,16 @@ def file_names(z: zipfile.ZipFile):
 
 
 def test_O16_Z1_zip_file_list(tmp_path):
-    out = tmp_path / "out" / "llm-wiki-add.zip"
+    out = tmp_path / "out" / "wiki-add.zip"
     out.parent.mkdir()
     res = build_zip.build(PLUGIN_ROOT, out)
     assert Path(res).resolve() == out.resolve()
     with zipfile.ZipFile(out) as z:
         assert file_names(z) == EXPECTED
         for n in z.namelist():
-            assert n.startswith("llm-wiki-add/")
+            assert n.startswith("wiki-add/")
         for f in FILES[1:]:
-            assert z.read(f"llm-wiki-add/{f}") == (SKILL_DIR / f).read_bytes()
+            assert z.read(f"wiki-add/{f}") == (SKILL_DIR / f).read_bytes()
 
 
 def test_O16_Z2_skill_name_substituted(tmp_path):
@@ -43,13 +43,13 @@ def test_O16_Z2_skill_name_substituted(tmp_path):
     build_zip.build(PLUGIN_ROOT, out)
     src = (SKILL_DIR / "SKILL.md").read_bytes().decode("utf-8")
     with zipfile.ZipFile(out) as z:
-        got = z.read("llm-wiki-add/SKILL.md").decode("utf-8")
+        got = z.read("wiki-add/SKILL.md").decode("utf-8")
     lines = src.split("\n")
     idx = [i for i, ln in enumerate(lines) if ln.rstrip() == "name: add"]
     assert idx, "source SKILL.md frontmatter must contain `name: add`"
-    lines[idx[0]] = "name: llm-wiki-add"
+    lines[idx[0]] = "name: wiki-add"
     assert got == "\n".join(lines)
-    assert "name: llm-wiki-add" in got.split("---")[1]
+    assert "name: wiki-add" in got.split("---")[1]
 
 
 def test_O16_Z3_stray_files_excluded(tmp_path):
@@ -85,7 +85,7 @@ def test_O16_cli_default_output_path(tmp_path):
         [sys.executable, str(plug / "scripts" / "build_zip.py")], cwd=plug, capture_output=True, text=True
     )
     assert r.returncode == 0, r.stderr
-    with zipfile.ZipFile(plug / "dist" / "llm-wiki-add.zip") as z:
+    with zipfile.ZipFile(plug / "dist" / "wiki-add.zip") as z:
         assert file_names(z) == EXPECTED
 
 
@@ -97,7 +97,7 @@ def test_O16_Y2_plugin_concept_equals_template():
 def test_O16_Y3_plugin_json_fields():
     data = json.loads((PLUGIN_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
     assert data["name"] == "llm-wiki"
-    assert data["version"] == "0.1.1"
+    assert data["version"] == "0.1.2"
     assert data["license"] == "MIT"
     assert "Doggy-Footprint" in json.dumps(data["author"])
     assert data["repository"] == "https://github.com/Doggy-Footprint/llm-wiki-plugin"

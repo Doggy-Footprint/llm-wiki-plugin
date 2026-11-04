@@ -7,7 +7,7 @@ import zipfile
 from pathlib import Path
 
 SKILL_FILES = ("SKILL.md", "learn.py", "concept.md", "claude-ai.md")
-TOP = "llm-wiki-add"
+TOP = "wiki-add"
 
 
 def build(plugin_dir: Path, out: Path) -> Path:
@@ -19,7 +19,7 @@ def build(plugin_dir: Path, out: Path) -> Path:
             data = (skill / name).read_bytes()
             if name == "SKILL.md":
                 # claude.ai 계정 안에서 `add`는 너무 일반적인 이름이라 zip에서만 바꾼다.
-                data = re.sub(rb"^name: add\r?$", b"name: llm-wiki-add", data, count=1, flags=re.M)
+                data = re.sub(rb"^name: add\r?$", b"name: wiki-add", data, count=1, flags=re.M)
             info = zipfile.ZipInfo(f"{TOP}/{name}", date_time=(2026, 1, 1, 0, 0, 0))
             info.external_attr = 0o644 << 16
             z.writestr(info, data, zipfile.ZIP_DEFLATED)
@@ -27,11 +27,11 @@ def build(plugin_dir: Path, out: Path) -> Path:
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description="llm-wiki-add.zip 빌드")
-    p.add_argument("--out", default=None, help="기본값: <플러그인 폴더>/dist/llm-wiki-add.zip")
+    p = argparse.ArgumentParser(description="wiki-add.zip 빌드")
+    p.add_argument("--out", default=None, help="기본값: <플러그인 폴더>/dist/wiki-add.zip")
     args = p.parse_args(argv)
     plugin_dir = Path(__file__).resolve().parent.parent
-    out = Path(args.out) if args.out else plugin_dir / "dist" / "llm-wiki-add.zip"
+    out = Path(args.out) if args.out else plugin_dir / "dist" / "wiki-add.zip"
     print(build(plugin_dir, out))
     return 0
 
