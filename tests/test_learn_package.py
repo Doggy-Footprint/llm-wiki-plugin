@@ -97,7 +97,7 @@ def test_O16_Y2_plugin_concept_equals_template():
 def test_O16_Y3_plugin_json_fields():
     data = json.loads((PLUGIN_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
     assert data["name"] == "llm-wiki"
-    assert data["version"] == "0.1.0"
+    assert data["version"] == "0.1.1"
     assert data["license"] == "MIT"
     assert "Doggy-Footprint" in json.dumps(data["author"])
     assert data["repository"] == "https://github.com/Doggy-Footprint/llm-wiki-plugin"
