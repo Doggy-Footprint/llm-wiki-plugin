@@ -21,7 +21,7 @@ def cli(capsys, tmp_path, root, argv, env=None):
 
 
 def one_json(out):
-    return json.loads(out)  # fails when stdout holds anything but a single JSON document
+    return json.loads(out)
 
 
 def test_O10_M1_env(tmp_path, capsys):

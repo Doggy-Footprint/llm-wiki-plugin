@@ -18,7 +18,6 @@ def plain_dir(tmp_path, name="plain"):
     return d
 
 
-# ---- mode (E1-E3) ----
 @pytest.mark.parametrize(
     "environ,mode",
     [
@@ -35,7 +34,6 @@ def test_O13_E1_E3_mode(tmp_path, environ, mode):
     assert learn.env(None, environ, cwd)["mode"] == mode
 
 
-# ---- root precedence (E4) ----
 def test_O13_E4_root_arg_beats_env_and_git(tmp_path):
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -75,7 +73,6 @@ def test_O13_has_wiki(tmp_path):
     assert learn.env(str(root), {}, tmp_path)["has_wiki"] is True
 
 
-# ---- cloud_push (E5-E8) ----
 def cp(tmp_path, toml=None):
     root = plain_dir(tmp_path, "r")
     if toml is not None:
@@ -112,7 +109,6 @@ def test_O13_E8_broken_toml(tmp_path):
     assert "llm-wiki.toml" in msg
 
 
-# ---- init (E9-E11) ----
 def test_O13_E9_init_empty_dir(tmp_path):
     root = plain_dir(tmp_path, "fresh")
     assert learn.env(str(root), {}, tmp_path)["has_wiki"] is False

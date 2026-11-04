@@ -2,7 +2,7 @@
 # requires-python = ">=3.11"
 # dependencies = ["markitdown[pdf,docx,pptx]==0.1.9"]
 # ///
-"""`/add` skill의 결정적 작업(자료 변환·보관, 위키 페이지 기록, claude.ai 결과 파일). 표준 라이브러리만 쓰고 markitdown은 fetch 안에서만 import한다."""
+"""표준 라이브러리만 쓰고 markitdown은 fetch 안에서만 import한다. claude.ai 코드 실행 환경처럼 의존성을 설치할 수 없는 곳에서도 env·result가 돌아야 한다."""
 from __future__ import annotations
 
 import argparse
@@ -101,8 +101,6 @@ def _check_level(level: int) -> None:
         raise LearnError(f"level은 0~4 정수여야 함: '{_show(level)}'")
 
 
-# --- 파일 쓰기 ---------------------------------------------------------------
-
 def _write_all(writes: Sequence[tuple[Path, bytes]]) -> None:
     """검증이 끝난 내용을 한꺼번에 쓰고, 중간에 실패하면 이전 상태로 되돌린다."""
     undo: list[tuple[Path, bytes | None]] = []
@@ -132,7 +130,7 @@ def _write_all(writes: Sequence[tuple[Path, bytes]]) -> None:
         raise
 
 
-# --- frontmatter / 줄 도우미 (scripts/_lib.py frontmatter와 같은 형식) -----------
+# 위키 저장소의 scripts/_lib.py frontmatter()가 같은 값으로 읽어야 한다.
 
 def _unquote(v: str) -> str:
     v = v.strip()
@@ -316,8 +314,6 @@ def _contains_block(have: list[str], block: list[str]) -> bool:
     return any(have[i : i + n] == block for i in range(len(have) - n + 1))
 
 
-# --- MANIFEST ---------------------------------------------------------------
-
 def _manifest_path(root: Path) -> Path:
     return root / "raw" / "MANIFEST.csv"
 
@@ -354,8 +350,6 @@ def _manifest_append(root: Path, row: list[str]) -> tuple[Path, bytes]:
         data += term.encode()
     return p, data + _csv_text([row], term)
 
-
-# --- env / init -------------------------------------------------------------
 
 def _find_git_top(cwd: Path) -> Path | None:
     for d in [cwd, *cwd.parents]:
@@ -414,8 +408,6 @@ def init(root: Path) -> dict:
     _write_all(todo)
     return {"created": [p.relative_to(root).as_posix() for p, _ in todo]}
 
-
-# --- fetch ------------------------------------------------------------------
 
 def _outline(text: str) -> list[dict] | None:
     if len(text) <= OUTLINE_THRESHOLD:
@@ -515,8 +507,6 @@ def fetch(source: str, date: datetime.date, slug: str, root: Path) -> dict:
     }
 
 
-# --- related ----------------------------------------------------------------
-
 def related(query: str, root: Path, limit: int = 10) -> list[dict]:
     terms = [t for t in query.lower().split() if t]
     if not terms:
@@ -558,8 +548,6 @@ def related(query: str, root: Path, limit: int = 10) -> list[dict]:
     found.sort(key=lambda r: (-r["score"], r["title"], r["path"]))
     return found[:limit]
 
-
-# --- record / import --------------------------------------------------------
 
 def _template_text(root: Path) -> str:
     p = root / "templates" / "concept.md"
@@ -729,8 +717,6 @@ def record(title: str, level: int, evidence: str, root: Path, date: datetime.dat
     return _commit_record(_plan_record(title, level, evidence, root, date, summary, misconception, sources))
 
 
-# --- 결과 파일 (claude.ai) ---------------------------------------------------
-
 def make_result(title: str, level: int, date: datetime.date, summary: str, evidence: str,
                 out_dir: Path, misconception: str | None = None, mine: str = "",
                 supplement: str = "", links: Sequence[str] = ()) -> dict:
@@ -854,8 +840,6 @@ def import_result(path: Path, root: Path) -> dict:
     out["sections_added"] = added
     return out
 
-
-# --- CLI --------------------------------------------------------------------
 
 def _date_arg(value: str) -> datetime.date:
     try:

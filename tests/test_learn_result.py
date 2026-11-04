@@ -63,7 +63,6 @@ def names(sections):
     return {s.lstrip("# ").strip() for s in sections}
 
 
-# ---- make_result (F17) ----
 def test_O17_make_result_file(tmp_path):
     res, p = made(tmp_path)
     assert p.name == "2026-11-05-신경망-기초.learn.md"
@@ -139,7 +138,6 @@ def test_O8_make_result_out_dir_missing(tmp_path):
     assert not out.exists()
 
 
-# ---- import (F18) ----
 def import_file(tmp_path, name="r.learn.md", text=None):
     return write(tmp_path / "in" / name, result_text() if text is None else text)
 
@@ -261,7 +259,6 @@ def test_O17_import_with_misconception_line(tmp_path):
     assert section_lines(page, "오해와 교정") == [f"- {DS} 잘못 알던 것"]
 
 
-# ---- errors (I5-I8) ----
 def test_O17_I5_file_missing(tmp_path):
     root = make_root(tmp_path)
     p = tmp_path / "in" / "nope.learn.md"

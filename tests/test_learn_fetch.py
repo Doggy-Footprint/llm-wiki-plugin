@@ -248,7 +248,6 @@ def test_O1_P12_existing_manifest_rows_preserved(tmp_path):
     assert len(rows) == 2 and rows[0]["extracted_to"] == "wiki/x.md"
 
 
-# ---- O2 ----
 @pytest.mark.parametrize("n,outline", [(20000, None), (20001, LONG_OUTLINE)], ids=["B1_20000", "B2_20001"])
 def test_O2_B1_B2_threshold(tmp_path, n, outline):
     root = make_root(tmp_path)
@@ -283,7 +282,6 @@ def test_O2_B3_short_doc_not_in_return(tmp_path):
     assert MARKER not in json.dumps(res, ensure_ascii=False)
 
 
-# ---- O1 P13 ----
 @pytest.fixture
 def convert_raises(monkeypatch):
     def boom(self, *a, **k):
