@@ -1,4 +1,4 @@
-"""Shared helpers for the learn/build_zip tests. Expected values come from the spec only."""
+"""Expected values come from the spec only, never from the implementation."""
 from __future__ import annotations
 
 import csv
@@ -69,7 +69,6 @@ def write(path: Path, content) -> Path:
 
 
 def snapshot(base: Path) -> dict:
-    """relative path -> bytes (files) or None (directories)."""
     return {
         p.relative_to(base).as_posix(): (None if p.is_dir() else p.read_bytes())
         for p in sorted(base.rglob("*"))
@@ -146,7 +145,6 @@ def section_lines(text: str, heading: str) -> list:
 
 
 def strip_added(text: str, added) -> str:
-    """Remove the first line equal to each added line."""
     lines = text.split("\n")
     for a in added:
         lines.remove(a)
@@ -170,7 +168,6 @@ def run_main(main, argv, environ=None, cwd=None) -> int:
 
 
 def expect_error(code, fn, base: Path, contains=()):
-    """Call fn, require LearnError(code), and require the whole `base` tree unchanged."""
     import learn
 
     before = snapshot(base)

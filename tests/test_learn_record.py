@@ -71,7 +71,6 @@ def expected_new_page(title, level, summary):
     )
 
 
-# ---- O4 ----
 def test_O4_T2_new_page_builtin_template(tmp_path):
     root = make_root(tmp_path)
     assert not (root / "templates").exists()
@@ -234,7 +233,6 @@ def test_O4_new_page_with_source_updates_manifest(tmp_path):
     assert {r["raw_path"]: r["extracted_to"] for r in rows}[src] == "wiki/study/NewS.md"
 
 
-# ---- F10 / C18 ----
 def test_O4_F10_idempotent_new_page(tmp_path):
     root = make_root(tmp_path)
     rec(root, "Idem", 2, "ev", summary="s")
@@ -285,7 +283,6 @@ def test_O4_F10_updated_differs_is_a_change(tmp_path):
     assert fm_parse((root / res["page"]).read_text(encoding="utf-8"))["updated"] == DS
 
 
-# ---- O5 ----
 @pytest.mark.parametrize("level", [0, 4])
 def test_O5_valid_levels(tmp_path, level):
     root = make_root(tmp_path)
@@ -304,7 +301,6 @@ def test_O5_invalid_levels_new_and_existing(tmp_path, level):
     expect_error(2, lambda: rec(root, "Topic", level, "ev"), tmp_path, [str(level)])
 
 
-# ---- O6 ----
 def test_O6_V1_hangul_title(tmp_path):
     root = make_root(tmp_path)
     res = rec(root, "한글 개념", 1, "e", summary="s")
@@ -371,7 +367,6 @@ def test_O4_summary_optional_for_existing_page(tmp_path):
     assert rec(root, "Topic", 3)["changed"] is True
 
 
-# ---- O7 ----
 def manifest_by(root):
     return {r["raw_path"]: r["extracted_to"] for r in read_manifest(root)[1]}
 
@@ -489,7 +484,6 @@ def test_O7_S9_key_absent_added_inline(tmp_path):
     assert "\nsources: [raw/2026/11/2026-11-05-b.pdf]\n---\n" in out
 
 
-# ---- O14 ----
 def lf_crlf_pair(tmp_path, page, extra):
     out = {}
     for tag, text in (("lf", page), ("crlf", page.replace("\n", "\r\n"))):

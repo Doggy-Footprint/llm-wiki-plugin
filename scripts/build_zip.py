@@ -1,4 +1,4 @@
-"""claude.ai에 올릴 skill zip을 만든다. 표준 라이브러리만 쓴다."""
+"""release workflow가 의존성 설치 없이 python3로 실행하므로 표준 라이브러리만 쓴다."""
 from __future__ import annotations
 
 import argparse
