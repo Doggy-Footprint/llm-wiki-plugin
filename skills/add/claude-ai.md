@@ -19,7 +19,7 @@ claude.ai 채팅에는 위키도 저장소도 없다. 같은 방식으로 진단
 
 ## 3. 결과 파일 만들기
 
-**코드 실행이 켜져 있으면** `learn.py`로 만든다. `<skill 폴더>`는 이 파일이 들어 있는 폴더(업로드한 `llm-wiki-add` skill)다. 내용 인자는 확인받은 그대로 넣는다.
+**코드 실행이 켜져 있으면** `learn.py`로 만든다. `<skill 폴더>`는 이 파일이 들어 있는 폴더(업로드한 `wiki-add` skill)다. 내용 인자는 확인받은 그대로 넣는다.
 
 ```
 python3 "<skill 폴더>/learn.py" result "<제목>" --level N --summary "<요약>" --evidence "<근거>" \
