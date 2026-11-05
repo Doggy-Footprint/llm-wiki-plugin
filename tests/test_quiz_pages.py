@@ -131,6 +131,8 @@ _LIB_PATH = Path(__file__).resolve().parents[3] / "scripts" / "_lib.py"
 
 
 def _lib():
+    if not _LIB_PATH.is_file():
+        pytest.skip("공개 플러그인 저장소에는 위키 저장소의 scripts/_lib.py가 없다")
     spec = importlib.util.spec_from_file_location("_lib_oracle", _LIB_PATH)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
