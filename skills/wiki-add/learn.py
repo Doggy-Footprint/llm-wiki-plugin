@@ -36,7 +36,7 @@ INDEX_TEXT = (
     "- 파일명 = 페이지 제목, 링크는 `[[제목]]`. 새 페이지는 `templates/`에서 시작하고 여기에 한 줄 추가한다.\n"
     "- frontmatter는 `key: value`, `key: [a, b]`만 쓴다. 중첩은 쓰지 않는다.\n"
     "- 사용자·자료에서 온 내용과 LLM 보충은 섹션을 나눈다.\n"
-    "- `level`(SOLO 0~4)과 `## 이해 기록`·`## 오해와 교정`은 `/add`(`learn.py`)만 쓴다.\n"
+    "- `level`(SOLO 0~4)과 `## 이해 기록`·`## 오해와 교정`은 `/wiki-add`(`learn.py`)만 쓴다.\n"
     "- 무엇이든 바꾸면 `wiki/log.md`에 한 줄을 덧붙인다.\n\n"
     f"{STUDY_HEADING}\n"
 )
@@ -851,7 +851,7 @@ def _date_arg(value: str) -> datetime.date:
 def _parser() -> argparse.ArgumentParser:
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--root", default=argparse.SUPPRESS)
-    p = argparse.ArgumentParser(prog="learn.py", description="/add skill helper")
+    p = argparse.ArgumentParser(prog="learn.py", description="/wiki-add skill helper")
     p.add_argument("--root", default=None)
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("env", parents=[common])

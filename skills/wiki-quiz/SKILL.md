@@ -1,11 +1,11 @@
 ---
-name: quiz
-description: Quiz the user on their wiki. Review mode asks about concept pages that are due under spaced repetition and records the graded answers; explore mode asks a pretest question about a missing or random concept and offers wiki-learn; cram mode practices without recording. Use for requests like "/quiz", "quiz me", "review what I studied", "quiz me on something new", or "explore a random concept".
+name: wiki-quiz
+description: Quiz the user on their wiki. Review mode asks about concept pages that are due under spaced repetition and records the graded answers; explore mode asks a pretest question about a missing or random concept and offers wiki-learn; cram mode practices without recording. Use for requests like "/wiki-quiz", "quiz me", "review what I studied", "quiz me on something new", or "explore a random concept".
 ---
 
-# quiz: 복습 퀴즈와 새 개념 탐색
+# wiki-quiz: 복습 퀴즈와 새 개념 탐색
 
-도구는 `uv run "<skill 폴더>/quiz.py" --root <root> <하위명령> ...`이다 (`<skill 폴더>`는 이 skill이 로드될 때 Claude Code가 알려 주는 "Base directory"). 출력은 JSON 한 줄이고 실패하면 stderr 메시지와 종료 코드 2를 준다. `root`는 `uv run "<skill 폴더>/../add/learn.py" env`의 `root`를 쓴다 (add skill이 없으면 git 최상위). `mode`가 `chat`이거나 claude.ai 채팅이면 이 파일을 따르지 말고 `claude-ai.md`만 따른다.
+도구는 `uv run "<skill 폴더>/quiz.py" --root <root> <하위명령> ...`이다 (`<skill 폴더>`는 이 skill이 로드될 때 Claude Code가 알려 주는 "Base directory"). 출력은 JSON 한 줄이고 실패하면 stderr 메시지와 종료 코드 2를 준다. `root`는 `uv run "<skill 폴더>/../wiki-add/learn.py" env`의 `root`를 쓴다 (add skill이 없으면 git 최상위). `mode`가 `chat`이거나 claude.ai 채팅이면 이 파일을 따르지 말고 `claude-ai.md`만 따른다.
 
 토큰 비용을 지킨다. 페이지를 **열지 않는다**. 질문에 필요한 내용은 `card`가 주는 요약·내가 정리한 것·오해·연결뿐이다. 복습 일정은 `data/reviews.csv`가 정하고 페이지에는 아무것도 쓰지 않는다.
 
@@ -33,7 +33,7 @@ description: Quiz the user on their wiki. Review mode asks about concept pages t
    - `easy`: 맞고 거기서 확장하거나 다른 영역으로 옮김
 7. 모든 항목이 끝나면 `제목 → rating` 표를 보여 주고 **확인을 받는다**. 확인 전에는 `record`를 실행하지 않는다. 사용자가 고치면 반영한다.
 8. 확인을 받으면 `record [--date D] <page>=<rating> ...`을 실행한다 (페이지는 `due`가 준 `path`). 이 명령이 `data/reviews.csv`에 줄을 더하고 `chat/deck.md`를 다시 만든다.
-9. `again`을 받은 개념은 `/wiki-learn`이나 `/add`로 그 개념을 공부해 보라고 권한다. 퀴즈는 페이지를 고치지 않는다.
+9. `again`을 받은 개념은 `/wiki-learn`이나 `/wiki-add`로 그 개념을 공부해 보라고 권한다. 퀴즈는 페이지를 고치지 않는다.
 
 ## 2. explore
 
@@ -52,6 +52,6 @@ description: Quiz the user on their wiki. Review mode asks about concept pages t
 
 1. `git add data/reviews.csv chat/`만 한다. `git add -A`는 쓰지 않는다.
 2. `git commit -m "quiz: <date> <개수>개 복습"`. 저장소 규칙이 `Request:`/`Intent:` 줄을 요구하면 붙인다.
-3. push는 하지 않는다. 클라우드 세션이면 `../add/SKILL.md`의 (k)를 따른다.
+3. push는 하지 않는다. 클라우드 세션이면 `../wiki-add/SKILL.md`의 (k)를 따른다.
 
 바뀐 것이 없으면 커밋하지 않는다. 마지막에 제목별 rating을 간단히 보고한다.

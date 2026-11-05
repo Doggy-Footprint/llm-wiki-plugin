@@ -11,7 +11,7 @@ from learn_support import (  # noqa: F401
     D, DS, PLUGIN_ROOT, SOLO, make_root, result_text, run_main, snapshot, write,
 )
 
-QUIZ_DIR = PLUGIN_ROOT / "skills" / "quiz"
+QUIZ_DIR = PLUGIN_ROOT / "skills" / "wiki-quiz"
 QUIZ_PY = QUIZ_DIR / "quiz.py"
 HEADER_LINE = "date,page,rating,mode,source,result_id"
 NOW = datetime.datetime(2026, 11, 5, 9, 30, 15)

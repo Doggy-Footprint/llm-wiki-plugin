@@ -538,7 +538,7 @@ def deck(root: Path, date: datetime.date) -> dict:
 def _load_learn():
     import importlib.util
 
-    p = Path(__file__).resolve().parent.parent / "add" / "learn.py"
+    p = Path(__file__).resolve().parent.parent / "wiki-add" / "learn.py"
     spec = importlib.util.spec_from_file_location("_quiz_learn", p)
     if spec is None or spec.loader is None:
         raise ImportError(f"learn.py를 불러올 수 없음: {p}")
