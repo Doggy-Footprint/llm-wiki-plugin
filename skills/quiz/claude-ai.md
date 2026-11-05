@@ -36,16 +36,16 @@ explore는 사전 질문 하나를 던지고, 짧게 설명하고, 이 개념을
 
 항목마다 매긴 점수를 모아 보여 주고 확인을 받는다. 확인 전에는 파일을 만들지 않는다. review에서 again이 나온 개념은 `wiki-learn`이나 `/add`로 공부해 보라고 권한다.
 
-**코드 실행이 켜져 있으면** 같은 zip의 `quiz.py`로 만든다. `<skill 폴더>`는 이 파일이 들어 있는 폴더(업로드한 `wiki-quiz` skill)다.
+**코드 실행이 켜져 있으면** `<스크립트 폴더>/quiz.py`로 만든다. `<스크립트 폴더>`는 로더 skill이 이 스크립트를 내려받은 폴더다.
 
 ```
-python3 "<skill 폴더>/quiz.py" result --out /mnt/user-data/outputs --date YYYY-MM-DD \
+python3 "<스크립트 폴더>/quiz.py" result --out /mnt/user-data/outputs --date YYYY-MM-DD \
   wiki/study/예시.md=good wiki/study/다른예시.md=again
 ```
 
 출력 JSON의 `path`가 만들어진 파일이다.
 
-**코드 실행이 꺼져 있으면** 아래 형식 그대로 직접 쓴다. 파일 이름은 `<날짜>-<HHMMSS>.quiz.md`. 첫 줄은 반드시 `---`이다.
+**코드 실행이 꺼져 있거나 스크립트를 내려받지 못했으면** 아래 형식 그대로 직접 쓴다. 파일 이름은 `<날짜>-<HHMMSS>.quiz.md`. 첫 줄은 반드시 `---`이다.
 
 ```
 ---

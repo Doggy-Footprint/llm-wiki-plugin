@@ -2,7 +2,7 @@
 # requires-python = ">=3.11"
 # dependencies = ["fsrs==6.3.2"]
 # ///
-"""표준 라이브러리만 최상위에서 import한다. fsrs는 일정 계산 함수 안에서만 import해서, 의존성을 설치할 수 없는 claude.ai 코드 실행 환경에서도 make_result와 `result`가 돌아야 한다. zip에는 이 파일만 들어가므로 learn.py·scripts/_lib.py를 최상위에서 import하지 않는다."""
+"""표준 라이브러리만 최상위에서 import한다. fsrs는 일정 계산 함수 안에서만 import해서, 의존성을 설치할 수 없는 claude.ai 코드 실행 환경에서도 make_result와 `result`가 돌아야 한다. claude.ai에서는 이 파일 하나만 내려받아 실행하므로 learn.py·scripts/_lib.py를 최상위에서 import하지 않는다."""
 from __future__ import annotations
 
 import argparse
