@@ -70,7 +70,7 @@ claude.ai에는 도구마다 로더 skill을 하나씩 올린다: `wiki-add`, `w
 
 1. [Releases](https://github.com/Doggy-Footprint/llm-wiki-plugin/releases)에서 `wiki-add.zip`, `wiki-learn.zip`, `wiki-quiz.zip`을 받는다 (직접 만들려면 `python scripts/build_zip.py`, 출력은 `dist/<도구>.zip`).
 2. PC 웹 claude.ai의 Settings → Capabilities(또는 Skills)에서 zip 세 개를 하나씩 업로드한다. 예전에 올린 `llm-wiki` 로더는 지운다 (같은 요청에 둘 다 반응한다). 업로드한 skill은 모바일 앱에서도 쓸 수 있다.
-3. 채팅에서 "/wiki-add 주제", "/wiki-learn", "이 뉴스레터로 공부하자", "/wiki-quiz"처럼 말한다. 위키 저장소의 `chat/deck.md`를 읽고 `chat/inbox/`에 커밋하려면 프롬프트에 위키 저장소를 적는다.
+3. 채팅에서 "/wiki-add 주제", "/wiki-learn", "이 뉴스레터로 공부하자", "/wiki-quiz"처럼 말한다. 로더에 적힌 위키 저장소(`Doggy-Footprint/LLM-wiki`)의 `chat/deck.md`를 읽고 `chat/inbox/`에 커밋한다. 다른 위키 저장소를 쓰려면 프롬프트에 적거나 로더의 3절을 고친다.
 4. 결과 파일은 `chat/inbox/`에 커밋되거나, 커밋할 수 없으면 내려받게 한다. Claude Code에서 `/wiki-add import <파일>`이나 `quiz.py sync`로 가져온다.
 
 - 지시 파일은 GitHub 연결로 읽고, 안 되면 `raw.githubusercontent.com`에서 읽는다. 둘 다 안 되면 멈춘다.

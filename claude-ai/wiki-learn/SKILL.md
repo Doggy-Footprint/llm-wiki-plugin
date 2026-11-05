@@ -34,4 +34,4 @@ mkdir -p /tmp/llm-wiki && curl -fsSL -o /tmp/llm-wiki/learn.py \
 
 ## 3. 위키 저장소
 
-이 공개 저장소는 지시만 담는다. 사용자의 위키(`chat/deck.md`, `chat/inbox/`)는 다른 저장소이고, 지시 파일대로 사용자의 프롬프트에 적힌 저장소를 쓴다.
+이 공개 저장소는 지시만 담는다. 사용자의 위키(`chat/deck.md`, `chat/inbox/`)는 GitHub 저장소 `Doggy-Footprint/LLM-wiki`(기본 브랜치 `master`)다. 지시 파일이 말하는 "저장소"는 이 저장소이고, 사용자가 프롬프트에 다른 저장소를 적었을 때만 그것을 쓴다.
