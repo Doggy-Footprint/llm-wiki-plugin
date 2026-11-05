@@ -1,8 +1,11 @@
 import json
+import os
+import re
 import runpy
 import shutil
 import subprocess
 import sys
+import time
 import zipfile
 from pathlib import Path
 
@@ -11,8 +14,9 @@ import pytest
 import build_zip
 from learn_support import PLUGIN_ROOT, SKILL_DIR, TEMPLATE
 
-FILES = ["SKILL.md", "learn.py", "concept.md", "claude-ai.md"]
-EXPECTED = {f"wiki-add/{f}" for f in FILES}
+LOADER = PLUGIN_ROOT / "claude-ai" / "SKILL.md"
+TOOLS = PLUGIN_ROOT / "claude-ai" / "skills.md"
+RAW_PREFIX = "https://raw.githubusercontent.com/Doggy-Footprint/llm-wiki-plugin/main/"
 
 
 def copy_plugin(tmp_path) -> Path:
@@ -21,72 +25,123 @@ def copy_plugin(tmp_path) -> Path:
     return dst
 
 
-def file_names(z: zipfile.ZipFile):
-    return {n for n in z.namelist() if not n.endswith("/")}
+def zip_entries(path):
+    with zipfile.ZipFile(path) as z:
+        return {i.filename: (i.date_time, i.external_attr >> 16, z.read(i)) for i in z.infolist() if not i.is_dir()}
 
 
-def test_O16_Z1_zip_file_list(tmp_path):
-    out = tmp_path / "out" / "wiki-add.zip"
-    out.parent.mkdir()
+def frontmatter(text: str) -> dict:
+    assert text.startswith("---\n")
+    block = text.split("---\n", 2)[1]
+    return dict(ln.split(": ", 1) for ln in block.strip().split("\n"))
+
+
+def tool_rows() -> list[list[str]]:
+    rows = []
+    for ln in TOOLS.read_text(encoding="utf-8").splitlines():
+        cells = [c.strip() for c in ln.strip().strip("|").split("|")]
+        if ln.startswith("|") and len(cells) == 4 and cells[0] not in ("도구", "---"):
+            rows.append(cells)
+    return rows
+
+
+def test_loader_zip_holds_only_loader_skill(tmp_path):
+    out = tmp_path / "out" / "llm-wiki.zip"
     res = build_zip.build(PLUGIN_ROOT, out)
     assert Path(res).resolve() == out.resolve()
-    with zipfile.ZipFile(out) as z:
-        assert file_names(z) == EXPECTED
-        for n in z.namelist():
-            assert n.startswith("wiki-add/")
-        for f in FILES[1:]:
-            assert z.read(f"wiki-add/{f}") == (SKILL_DIR / f).read_bytes()
+    ent = zip_entries(out)
+    assert set(ent) == {"llm-wiki/SKILL.md"}
+    assert ent["llm-wiki/SKILL.md"][2] == LOADER.read_bytes()
+    assert ent["llm-wiki/SKILL.md"][1] == 0o644
 
 
-def test_O16_Z2_skill_name_substituted(tmp_path):
-    out = tmp_path / "z.zip"
-    build_zip.build(PLUGIN_ROOT, out)
-    src = (SKILL_DIR / "SKILL.md").read_bytes().decode("utf-8")
-    with zipfile.ZipFile(out) as z:
-        got = z.read("wiki-add/SKILL.md").decode("utf-8")
-    lines = src.split("\n")
-    idx = [i for i, ln in enumerate(lines) if ln.rstrip() == "name: add"]
-    assert idx, "source SKILL.md frontmatter must contain `name: add`"
-    lines[idx[0]] = "name: wiki-add"
-    assert got == "\n".join(lines)
-    assert "name: wiki-add" in got.split("---")[1]
+def test_loader_frontmatter_name_and_english_description():
+    fm = frontmatter(LOADER.read_text(encoding="utf-8"))
+    assert fm["name"] == "llm-wiki"
+    desc = fm["description"]
+    assert desc.isascii() and 0 < len(desc) <= 1024
+    for name in ("add", "wiki-learn", "quiz"):
+        assert re.search(rf"\({re.escape(name)}\)", desc), name
 
 
-def test_O16_Z3_stray_files_excluded(tmp_path):
+def test_loader_points_at_public_repo_and_tool_list():
+    text = LOADER.read_text(encoding="utf-8")
+    assert "Doggy-Footprint/llm-wiki-plugin" in text and RAW_PREFIX in text
+    assert "`claude-ai/skills.md`" in text
+
+
+def test_tool_list_paths_exist_and_cover_every_chat_skill():
+    rows = tool_rows()
+    assert [r[0] for r in rows] == ["add", "wiki-learn", "quiz"]
+    for name, _, instr, script in rows:
+        assert (PLUGIN_ROOT / instr).is_file(), instr
+        assert (PLUGIN_ROOT / script).is_file(), script
+        assert instr == f"skills/{name}/claude-ai.md"
+    chat_skills = {p.parent.name for p in (PLUGIN_ROOT / "skills").glob("*/claude-ai.md")}
+    assert chat_skills == {r[0] for r in rows}
+
+
+@pytest.mark.parametrize("name", ["add", "wiki-learn", "quiz"])
+def test_chat_instructions_reference_existing_repo_paths(name):
+    text = (PLUGIN_ROOT / "skills" / name / "claude-ai.md").read_text(encoding="utf-8")
+    assert "<skill 폴더>" not in text and "zip" not in text
+    for ref in re.findall(r"`(skills/[\w-]+/[\w.-]+)`", text):
+        assert (PLUGIN_ROOT / ref).is_file(), ref
+
+
+def test_build_ignores_other_files(tmp_path):
     plug = copy_plugin(tmp_path)
-    skill = plug / "skills" / "add"
-    (skill / "__pycache__").mkdir()
-    (skill / "__pycache__" / "x.pyc").write_bytes(b"\x00pyc")
-    (skill / "tests").mkdir()
-    (skill / "tests" / "t_stray.py").write_text("x = 1\n")
-    (skill / "notes.txt").write_text("stray\n")
-    (plug / "tests" / "extra_test.py").write_text("y = 2\n")
+    (plug / "claude-ai" / "notes.txt").write_text("stray\n")
+    (plug / "claude-ai" / "__pycache__").mkdir()
+    (plug / "claude-ai" / "__pycache__" / "x.pyc").write_bytes(b"\x00pyc")
     out = tmp_path / "z.zip"
     build_zip.build(plug, out)
-    with zipfile.ZipFile(out) as z:
-        assert file_names(z) == EXPECTED
-        assert not any("pyc" in n or "tests" in n or "notes" in n for n in z.namelist())
+    assert set(zip_entries(out)) == {"llm-wiki/SKILL.md"}
 
 
-def test_O16_cli_runs_in_process(tmp_path, monkeypatch):
+def test_build_bytes_stable_across_mtime_and_clock(tmp_path, monkeypatch):
+    plug = copy_plugin(tmp_path)
+    first = build_zip.build(plug, tmp_path / "a.zip").read_bytes()
+    year_2100 = 4102444800
+    os.utime(plug / "claude-ai" / "SKILL.md", (year_2100, year_2100))
+    real_time, real_lt, real_gt = time.time, time.localtime, time.gmtime
+
+    def shifted():
+        return real_time() + 400 * 86400
+
+    monkeypatch.setattr(time, "time", shifted)
+    monkeypatch.setattr(time, "localtime", lambda secs=None: real_lt(shifted() if secs is None else secs))
+    monkeypatch.setattr(time, "gmtime", lambda secs=None: real_gt(shifted() if secs is None else secs))
+    assert build_zip.build(plug, tmp_path / "b.zip").read_bytes() == first
+
+
+def test_cli_runs_in_process(tmp_path, monkeypatch):
     out = tmp_path / "cli.zip"
     monkeypatch.setattr(sys, "argv", ["build_zip.py", "--out", str(out)])
     try:
         runpy.run_path(str(PLUGIN_ROOT / "scripts" / "build_zip.py"), run_name="__main__")
     except SystemExit as e:
         assert e.code in (None, 0)
-    with zipfile.ZipFile(out) as z:
-        assert file_names(z) == EXPECTED
+    assert set(zip_entries(out)) == {"llm-wiki/SKILL.md"}
 
 
-def test_O16_cli_default_output_path(tmp_path):
+def test_cli_default_output_path(tmp_path):
     plug = copy_plugin(tmp_path)
-    r = subprocess.run(
-        [sys.executable, str(plug / "scripts" / "build_zip.py")], cwd=plug, capture_output=True, text=True
-    )
+    r = subprocess.run([sys.executable, str(plug / "scripts" / "build_zip.py")], cwd=plug, capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
-    with zipfile.ZipFile(plug / "dist" / "wiki-add.zip") as z:
-        assert file_names(z) == EXPECTED
+    assert set(zip_entries(plug / "dist" / "llm-wiki.zip")) == {"llm-wiki/SKILL.md"}
+
+
+def test_cli_rejects_removed_skill_option(tmp_path):
+    r = subprocess.run([sys.executable, str(PLUGIN_ROOT / "scripts" / "build_zip.py"), "--skill", "quiz",
+                        "--out", str(tmp_path / "x.zip")], capture_output=True, text=True)
+    assert r.returncode != 0 and not (tmp_path / "x.zip").exists()
+
+
+def test_release_uploads_the_built_loader_zip():
+    text = (PLUGIN_ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+    assert "python3 scripts/build_zip.py --out dist/llm-wiki.zip" in text
+    assert re.search(r"gh release create \"\$tag\" dist/llm-wiki\.zip ", text)
 
 
 def test_O16_Y2_plugin_concept_equals_template():
@@ -127,144 +182,11 @@ def test_O16_Y6_pep723_block_in_header():
     assert any("markitdown[pdf,docx,pptx]==0.1.9" in ln for ln in block)
 
 
-SKILLS = PLUGIN_ROOT / "skills"
-LEARN_DIR = SKILLS / "wiki-learn"
-QUIZ_DIR = SKILLS / "quiz"
-WL_NAMES = ["SKILL.md", "claude-ai.md", "add.md", "add-claude-ai.md", "learn.py", "concept.md"]
-WQ_NAMES = ["SKILL.md", "claude-ai.md", "quiz.py"]
-WL_EXPECTED = {f"wiki-learn/{n}" for n in WL_NAMES}
-WQ_EXPECTED = {f"wiki-quiz/{n}" for n in WQ_NAMES}
-
-
-def zip_entries(path):
-    with zipfile.ZipFile(path) as z:
-        return {i.filename: (i.date_time, i.external_attr >> 16, z.read(i)) for i in z.infolist() if not i.is_dir()}
-
-
-def built(tmp_path, skill, name="z.zip"):
-    out = tmp_path / name
-    res = build_zip.build(PLUGIN_ROOT, out, skill)
-    assert Path(res).resolve() == out.resolve()
-    return out
-
-
-def test_O12_C27_wiki_learn_zip_entries_and_bytes(tmp_path):
-    ent = zip_entries(built(tmp_path, "wiki-learn"))
-    assert set(ent) == WL_EXPECTED
-    assert ent["wiki-learn/SKILL.md"][2] == (LEARN_DIR / "SKILL.md").read_bytes()
-    assert ent["wiki-learn/claude-ai.md"][2] == (LEARN_DIR / "claude-ai.md").read_bytes()
-    assert ent["wiki-learn/add.md"][2] == (SKILL_DIR / "SKILL.md").read_bytes()
-    assert ent["wiki-learn/add-claude-ai.md"][2] == (SKILL_DIR / "claude-ai.md").read_bytes()
-    assert ent["wiki-learn/learn.py"][2] == (SKILL_DIR / "learn.py").read_bytes()
-    assert ent["wiki-learn/concept.md"][2] == (SKILL_DIR / "concept.md").read_bytes()
-
-
-def test_O12_C27_wiki_quiz_zip_entries_and_name_substitution(tmp_path):
-    ent = zip_entries(built(tmp_path, "quiz"))
-    assert set(ent) == WQ_EXPECTED
-    assert ent["wiki-quiz/claude-ai.md"][2] == (QUIZ_DIR / "claude-ai.md").read_bytes()
-    assert ent["wiki-quiz/quiz.py"][2] == (QUIZ_DIR / "quiz.py").read_bytes()
-    src = (QUIZ_DIR / "SKILL.md").read_bytes().decode("utf-8")
-    lines = src.split("\n")
-    idx = [i for i, ln in enumerate(lines) if ln.rstrip() == "name: quiz"]
-    assert idx, "source quiz SKILL.md frontmatter must contain `name: quiz`"
-    lines[idx[0]] = "name: wiki-quiz"
-    got = ent["wiki-quiz/SKILL.md"][2].decode("utf-8")
-    assert got == "\n".join(lines)
-    assert "name: wiki-quiz" in got.split("---")[1] and "name: quiz\n" not in got.split("---")[1]
-
-
-def test_O12_C27_wiki_add_zip_unchanged_by_default_and_explicit(tmp_path):
-    a = zip_entries(built(tmp_path, "add", "a.zip"))
-    out = tmp_path / "b.zip"
-    build_zip.build(PLUGIN_ROOT, out)
-    assert zip_entries(out) == a
-    assert set(a) == EXPECTED
-
-
-@pytest.mark.parametrize("skill", ["add", "wiki-learn", "quiz"])
-def test_O12_zip_metadata_fixed_and_0644(tmp_path, skill):
-    p1 = built(tmp_path, skill, "one.zip")
-    other = tmp_path / "later"
-    other.mkdir()
-    p2 = built(other, skill, "two.zip")
-    e1, e2 = zip_entries(p1), zip_entries(p2)
-    assert e1 == e2
-    assert len({v[0] for v in e1.values()}) == 1
-    assert {v[1] for v in e1.values()} == {0o644}
-
-
-@pytest.mark.parametrize("skill", ["nope", "", "wiki-quiz", "wiki-add", "learn"])
-def test_O12_unknown_skill_value_error(tmp_path, skill):
-    with pytest.raises(ValueError):
-        build_zip.build(PLUGIN_ROOT, tmp_path / "x.zip", skill)
-
-
-def test_O12_stray_files_excluded_for_new_skills(tmp_path):
-    plug = copy_plugin(tmp_path)
-    for d in ("wiki-learn", "quiz"):
-        sk = plug / "skills" / d
-        (sk / "__pycache__").mkdir(exist_ok=True)
-        (sk / "__pycache__" / "x.pyc").write_bytes(b"\x00pyc")
-        (sk / "notes.txt").write_text("stray\n")
-        (sk / "tests").mkdir(exist_ok=True)
-        (sk / "tests" / "t.py").write_text("x = 1\n")
-    wl, wq = tmp_path / "wl.zip", tmp_path / "wq.zip"
-    build_zip.build(plug, wl, "wiki-learn")
-    build_zip.build(plug, wq, "quiz")
-    assert set(zip_entries(wl)) == WL_EXPECTED
-    assert set(zip_entries(wq)) == WQ_EXPECTED
-
-
-def test_O12_build_all(tmp_path):
-    out_dir = tmp_path / "dist"
-    out_dir.mkdir()
-    res = build_zip.build_all(PLUGIN_ROOT, out_dir)
-    assert sorted(Path(p).name for p in res) == ["wiki-add.zip", "wiki-learn.zip", "wiki-quiz.zip"]
-    assert len(res) == 3
-    for p in res:
-        assert Path(p).parent.resolve() == out_dir.resolve() and Path(p).is_file()
-    assert sorted(f.name for f in out_dir.iterdir()) == ["wiki-add.zip", "wiki-learn.zip", "wiki-quiz.zip"]
-    assert set(zip_entries(out_dir / "wiki-add.zip")) == EXPECTED
-    assert set(zip_entries(out_dir / "wiki-learn.zip")) == WL_EXPECTED
-    assert set(zip_entries(out_dir / "wiki-quiz.zip")) == WQ_EXPECTED
-    assert zip_entries(out_dir / "wiki-learn.zip") == zip_entries(built(tmp_path, "wiki-learn", "single.zip"))
-    assert zip_entries(out_dir / "wiki-quiz.zip") == zip_entries(built(tmp_path, "quiz", "single2.zip"))
-
-
-@pytest.mark.parametrize("skill,expected", [("wiki-learn", WL_EXPECTED), ("quiz", WQ_EXPECTED), ("add", EXPECTED)])
-def test_O12_cli_skill_option(tmp_path, skill, expected):
-    out = tmp_path / "cli.zip"
-    r = subprocess.run([sys.executable, str(PLUGIN_ROOT / "scripts" / "build_zip.py"), "--skill", skill,
-                        "--out", str(out)], capture_output=True, text=True)
-    assert r.returncode == 0, r.stderr
-    assert set(zip_entries(out)) == expected
-
-
-def test_O12_cli_all_out_dir(tmp_path):
-    out_dir = tmp_path / "all"
-    r = subprocess.run([sys.executable, str(PLUGIN_ROOT / "scripts" / "build_zip.py"), "--all",
-                        "--out-dir", str(out_dir)], capture_output=True, text=True)
-    assert r.returncode == 0, r.stderr
-    assert sorted(f.name for f in out_dir.iterdir()) == ["wiki-add.zip", "wiki-learn.zip", "wiki-quiz.zip"]
-
-
-def test_O12_cli_unknown_skill_fails(tmp_path):
-    r = subprocess.run([sys.executable, str(PLUGIN_ROOT / "scripts" / "build_zip.py"), "--skill", "nope",
-                        "--out", str(tmp_path / "x.zip")], capture_output=True, text=True)
-    assert r.returncode != 0 and not (tmp_path / "x.zip").exists()
-
-
 def test_O12_plugin_json_version_and_description():
     data = json.loads((PLUGIN_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
     assert data["version"] == "0.2.0"
     desc = data["description"].lower()
     assert "wiki-learn" in desc and "quiz" in desc and "add" in desc
-
-
-import os
-import re
-import time
 
 
 def test_O12_description_names_each_skill_as_a_word():
@@ -276,37 +198,3 @@ def test_O12_description_names_each_skill_as_a_word():
     assert re.search(r"\badd\b", stripped), "description must name add on its own"
     assert re.search(r"\bquiz\b", stripped), "description must name quiz on its own"
     assert re.search(r"\bwiki-learn\b", desc)
-
-
-def build_three(plug, out_dir):
-    out_dir.mkdir(parents=True, exist_ok=True)
-    paths = {}
-    for skill, name in (("add", "a.zip"), ("wiki-learn", "l.zip"), ("quiz", "q.zip")):
-        p = out_dir / name
-        build_zip.build(plug, p, skill)
-        paths[skill] = p.read_bytes()
-    return paths
-
-
-def test_O12_zip_bytes_unchanged_when_source_mtimes_change(tmp_path):
-    plug = copy_plugin(tmp_path)
-    first = build_three(plug, tmp_path / "b1")
-    year_2100 = 4102444800
-    for p in (plug / "skills").rglob("*"):
-        os.utime(p, (year_2100, year_2100))
-    second = build_three(plug, tmp_path / "b2")
-    assert first == second
-
-
-def test_O12_zip_bytes_unchanged_when_clock_is_shifted(tmp_path, monkeypatch):
-    plug = copy_plugin(tmp_path)
-    base = build_three(plug, tmp_path / "plain")
-    real_time, real_lt, real_gt = time.time, time.localtime, time.gmtime
-
-    def shifted():
-        return real_time() + 400 * 86400
-
-    monkeypatch.setattr(time, "time", shifted)
-    monkeypatch.setattr(time, "localtime", lambda secs=None: real_lt(shifted() if secs is None else secs))
-    monkeypatch.setattr(time, "gmtime", lambda secs=None: real_gt(shifted() if secs is None else secs))
-    assert build_three(plug, tmp_path / "shifted") == base

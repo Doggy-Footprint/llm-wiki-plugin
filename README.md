@@ -66,14 +66,17 @@ claude.ai 채팅은 위키 저장소에 접근할 수 있을 때 아래 두 경�
 
 ## claude.ai 채팅 (웹·모바일)
 
-채팅에는 위키가 없으므로 zip skill로 대화하고 결과 파일을 가져온다.
+claude.ai에는 로더 skill `llm-wiki` 하나만 올린다. 로더는 쓸 때마다 이 저장소 `main`의 `claude-ai/skills.md`(도구 목록)와 각 도구의 `skills/<도구>/claude-ai.md`를 읽어 그대로 따른다. 그래서 지시를 고치거나 도구를 추가해도 이 저장소에 반영되면 다시 올릴 필요가 없다.
 
-1. [Releases](https://github.com/Doggy-Footprint/llm-wiki-plugin/releases)에서 `wiki-add.zip`, `wiki-learn.zip`, `wiki-quiz.zip`을 받는다 (직접 만들려면 `python scripts/build_zip.py --all --out-dir dist`, 하나만은 `--skill add|wiki-learn|quiz`). `wiki-learn`은 `wiki-add`와 따로 쓸 수 있다 (필요한 파일이 zip에 들어 있다). 위키 저장소의 `chat/deck.md`를 읽고 `chat/inbox/`에 커밋하려면 프롬프트에 저장소를 적는다.
-2. PC 웹 claude.ai의 Settings → Capabilities(또는 Skills)에서 zip을 업로드한다. 업로드한 skill은 모바일 앱에서도 쓸 수 있다. 코드 실행을 켜 두면 결과 파일을 자동으로 만들고, 꺼져 있으면 같은 형식의 텍스트를 보여 준다.
-3. 채팅에서 주제를 말하면 같은 방식으로 진단·대화한 뒤 `<날짜>-<제목>.learn.md` 결과 파일을 만든다.
-4. 결과 파일을 위키로 가져온다. Claude Code에서 `/add import <파일>`을 실행하거나, 위키 저장소를 쓰는 환경이면 Google Drive의 `LLM-wiki-inbox`에 저장해 `/ingest`가 가져가게 한다.
+1. [Releases](https://github.com/Doggy-Footprint/llm-wiki-plugin/releases)에서 `llm-wiki.zip`을 받는다 (직접 만들려면 `python scripts/build_zip.py`, 출력은 `dist/llm-wiki.zip`).
+2. PC 웹 claude.ai의 Settings → Capabilities(또는 Skills)에서 zip을 업로드한다. 예전에 올린 `wiki-add`, `wiki-learn`, `wiki-quiz`는 지운다 (같은 요청에 둘 다 반응한다). 업로드한 skill은 모바일 앱에서도 쓸 수 있다.
+3. 채팅에서 "/add 주제", "이 뉴스레터로 공부하자", "/quiz"처럼 말한다. 위키 저장소의 `chat/deck.md`를 읽고 `chat/inbox/`에 커밋하려면 프롬프트에 위키 저장소를 적는다.
+4. 결과 파일은 `chat/inbox/`에 커밋되거나, 커밋할 수 없으면 내려받게 한다. Claude Code에서 `/add import <파일>`이나 `quiz.py sync`로 가져온다.
 
-zip skill은 자동으로 업데이트되지 않는다. 새 버전은 다시 업로드한다.
+- 지시 파일은 GitHub 연결로 읽고, 안 되면 `raw.githubusercontent.com`에서 읽는다. 둘 다 안 되면 멈춘다.
+- 코드 실행이 켜져 있으면 로더가 그 도구의 스크립트(`learn.py`, `quiz.py`)를 `raw.githubusercontent.com`에서 내려받아 결과 파일을 만든다. 코드 실행이 꺼져 있거나 네트워크가 막혀 내려받지 못하면 같은 형식의 텍스트를 직접 쓴다.
+- 새 도구를 추가할 때: `skills/<도구>/claude-ai.md`를 쓰고 `claude-ai/skills.md`에 한 줄을 더한다. 테스트가 목록과 실제 파일이 맞는지 확인한다.
+- 로더 자체(`claude-ai/SKILL.md`)나 그 description을 바꿨을 때만 zip을 다시 올린다.
 
 ## 개발
 
@@ -83,7 +86,7 @@ PYTHONPATH=skills/add:skills/quiz:scripts uv run --no-project --with pytest --wi
   python -m pytest tests --cov=learn --cov=quiz --cov=build_zip --cov-branch --cov-fail-under=90
 ```
 
-main에 push하면 GitHub Actions가 테스트를 돌리고, `plugin.json`의 `version`에 해당하는 `v<version>` 태그가 없을 때만 zip을 Release로 올린다.
+main에 push하면 GitHub Actions가 테스트를 돌리고, `plugin.json`의 `version`에 해당하는 `v<version>` 태그가 없을 때만 `llm-wiki.zip`을 Release로 올린다. claude.ai는 지시를 `main`에서 바로 읽으므로 지시만 바뀐 변경은 버전을 올리지 않아도 반영된다.
 
 ## 라이선스
 
