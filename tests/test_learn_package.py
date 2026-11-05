@@ -63,8 +63,7 @@ def test_loader_frontmatter_name_and_english_description(name):
     assert fm["name"] == name
     desc = fm["description"]
     assert desc.isascii() and 0 < len(desc) <= 1024
-    # YAML plain scalars cannot contain ": ", which would break claude.ai's frontmatter parsing.
-    assert ": " not in desc
+    assert ": " not in desc, "YAML plain scalar에는 ': '가 들어갈 수 없다 (claude.ai frontmatter가 깨진다)"
     assert f'"/{name}' in desc
 
 
