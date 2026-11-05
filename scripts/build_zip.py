@@ -5,7 +5,6 @@ import argparse
 import zipfile
 from pathlib import Path
 
-# 도구별 지시는 claude.ai가 실행 때 공개 저장소에서 읽으므로 zip에는 로더 SKILL.md만 넣는다.
 TOP = "llm-wiki"
 ZIP_NAME = f"{TOP}.zip"
 
