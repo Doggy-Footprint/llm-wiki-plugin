@@ -15,9 +15,9 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - name: test
         run: >
-          PYTHONPATH=skills/add:scripts uv run --no-project --with pytest --with pytest-cov
-          --with 'markitdown[pdf,docx,pptx]==0.1.9'
-          python -m pytest tests --cov=learn --cov=build_zip --cov-branch --cov-fail-under=90
+          PYTHONPATH=skills/add:skills/quiz:scripts uv run --no-project --with pytest --with pytest-cov
+          --with 'markitdown[pdf,docx,pptx]==0.1.9' --with fsrs==6.3.2
+          python -m pytest tests --cov=learn --cov=quiz --cov=build_zip --cov-branch --cov-fail-under=90
       - name: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -28,5 +28,5 @@ jobs:
             echo "${tag} already exists; skipping release"
             exit 0
           fi
-          python3 scripts/build_zip.py --out dist/wiki-add.zip
-          gh release create "$tag" dist/wiki-add.zip --target "$GITHUB_SHA" --title "$tag" --generate-notes
+          python3 scripts/build_zip.py --all --out-dir dist
+          gh release create "$tag" dist/wiki-add.zip dist/wiki-learn.zip dist/wiki-quiz.zip --target "$GITHUB_SHA" --title "$tag" --generate-notes

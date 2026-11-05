@@ -25,9 +25,36 @@
 - 페이지는 `wiki/study/<제목>.md`에 만든다. 대화 전문은 저장하지 않는다.
 - 이 저장소의 템플릿을 쓰려면 위키 root에 `templates/concept.md`를 둔다. 없으면 내장 템플릿을 쓴다.
 
+## wiki-learn: 뉴스레터·퀴즈에서 개념 공부
+
+```
+/llm-wiki:wiki-learn            # 대화에 있는(또는 붙여 넣은) 뉴스레터·퀴즈 글
+/llm-wiki:wiki-learn ~/Downloads/newsletter.pdf
+```
+
+글에서 개념을 최대 7개 뽑아 위키에 있는 개념(제목, level)과 새 개념으로 나눠 보여 준다. 하나를 고르면 `/add`와 같은 진단·교육을 하고, 끝에 처음 묻지 않은 문제 2~3개로 마지막 테스트를 한 뒤 수준을 다시 판정해 기록한다. 퀴즈 문제가 입력이면 힌트 없이 먼저 답하게 한다. `skills/add/`도 함께 있어야 한다.
+
+## quiz: 복습과 탐색 퀴즈
+
+```
+/llm-wiki:quiz                  # review: 복습 시점이 된 개념 5개
+/llm-wiki:quiz explore          # 위키가 링크만 걸어 둔 개념 중에서
+/llm-wiki:quiz explore random   # 위키에 없는 개념 아무거나
+/llm-wiki:quiz cram             # 기록하지 않는 연습
+```
+
+복습 일정은 [FSRS](https://github.com/open-spaced-repetition/py-fsrs)(`fsrs==6.3.2`, 목표 기억률 0.9)로 `data/reviews.csv`를 재생해 계산한다. 페이지에는 복습 필드를 쓰지 않는다. 답은 again/hard/good/easy로 채점해 확인을 받은 뒤 `quiz.py record`가 `data/reviews.csv`에 줄을 더한다. 한 번도 퀴즈를 보지 않은 페이지는 `created` 날짜에 good으로 한 번 공부한 것으로 친다. 시작할 때 `quiz.py sync`를 실행한다.
+
+### chat/ 교환
+
+claude.ai 채팅은 위키 저장소에 접근할 수 있을 때 아래 두 경로로 주고받는다.
+
+- `chat/deck.md`: `quiz.py deck`(`record`·`sync`도 갱신)이 만드는 요약 카드 모음. 채팅은 위키 상태를 이 파일로만 읽는다. 구간마다 개수가 제한된다 (due 10, frontier 10).
+- `chat/inbox/`: 채팅이 결과 파일(`*.quiz.md`, `*.learn.md`)을 커밋하는 곳. `quiz.py sync`가 가져와 `data/reviews.csv`나 개념 페이지에 반영하고 지운다. 가져오기에 실패한 파일은 남는다. 이 폴더는 git에 추적되어야 한다 (`.gitkeep`).
+
 ## Claude 앱 Code 탭 (클라우드 세션)
 
-클라우드 세션은 플러그인을 설치하지 않고 저장소의 `.claude/skills/`만 읽는다. 위키 저장소에 이 플러그인의 `skills/add/`를 `.claude/skills/add/`로 복사해 커밋해 두면 `/add`가 동작한다.
+클라우드 세션은 플러그인을 설치하지 않고 저장소의 `.claude/skills/`만 읽는다. 위키 저장소에 이 플러그인의 `skills/add/`, `skills/wiki-learn/`, `skills/quiz/`를 `.claude/skills/` 아래로 복사해 커밋해 두면 `/add`, `/wiki-learn`, `/quiz`가 동작한다.
 
 - 결과를 기본 브랜치에 바로 올리려면 저장소 root에 `llm-wiki.toml`을 둔다. 없으면 세션 브랜치에 push한다.
   ```toml
@@ -41,7 +68,7 @@
 
 채팅에는 위키가 없으므로 zip skill로 대화하고 결과 파일을 가져온다.
 
-1. [Releases](https://github.com/Doggy-Footprint/llm-wiki-plugin/releases)에서 `wiki-add.zip`을 받는다 (직접 만들려면 `python scripts/build_zip.py`).
+1. [Releases](https://github.com/Doggy-Footprint/llm-wiki-plugin/releases)에서 `wiki-add.zip`, `wiki-learn.zip`, `wiki-quiz.zip`을 받는다 (직접 만들려면 `python scripts/build_zip.py --all --out-dir dist`, 하나만은 `--skill add|wiki-learn|quiz`). `wiki-learn`은 `wiki-add`와 따로 쓸 수 있다 (필요한 파일이 zip에 들어 있다). 위키 저장소의 `chat/deck.md`를 읽고 `chat/inbox/`에 커밋하려면 프롬프트에 저장소를 적는다.
 2. PC 웹 claude.ai의 Settings → Capabilities(또는 Skills)에서 zip을 업로드한다. 업로드한 skill은 모바일 앱에서도 쓸 수 있다. 코드 실행을 켜 두면 결과 파일을 자동으로 만들고, 꺼져 있으면 같은 형식의 텍스트를 보여 준다.
 3. 채팅에서 주제를 말하면 같은 방식으로 진단·대화한 뒤 `<날짜>-<제목>.learn.md` 결과 파일을 만든다.
 4. 결과 파일을 위키로 가져온다. Claude Code에서 `/add import <파일>`을 실행하거나, 위키 저장소를 쓰는 환경이면 Google Drive의 `LLM-wiki-inbox`에 저장해 `/ingest`가 가져가게 한다.
@@ -51,9 +78,9 @@ zip skill은 자동으로 업데이트되지 않는다. 새 버전은 다시 업
 ## 개발
 
 ```
-PYTHONPATH=skills/add:scripts uv run --no-project --with pytest --with pytest-cov \
-  --with 'markitdown[pdf,docx,pptx]==0.1.9' \
-  python -m pytest tests --cov=learn --cov=build_zip --cov-branch --cov-fail-under=90
+PYTHONPATH=skills/add:skills/quiz:scripts uv run --no-project --with pytest --with pytest-cov \
+  --with 'markitdown[pdf,docx,pptx]==0.1.9' --with fsrs==6.3.2 \
+  python -m pytest tests --cov=learn --cov=quiz --cov=build_zip --cov-branch --cov-fail-under=90
 ```
 
 main에 push하면 GitHub Actions가 테스트를 돌리고, `plugin.json`의 `version`에 해당하는 `v<version>` 태그가 없을 때만 zip을 Release로 올린다.
