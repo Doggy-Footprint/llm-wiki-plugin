@@ -165,11 +165,11 @@ def load_isolated(path, name="quiz_isolated"):
 
 def isolated_sync(tmp_path, learn_py_text=None):
     iso = tmp_path / "iso"
-    qdir = iso / "skills" / "quiz"
+    qdir = iso / "skills" / "wiki-quiz"
     qdir.mkdir(parents=True)
     shutil.copy(QUIZ_PY, qdir / "quiz.py")
     if learn_py_text is not None:
-        write(iso / "skills" / "add" / "learn.py", learn_py_text)
+        write(iso / "skills" / "wiki-add" / "learn.py", learn_py_text)
     mod = load_isolated(qdir / "quiz.py")
     root = base_root(tmp_path, "iroot")
     ib = inbox(root)

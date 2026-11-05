@@ -14,9 +14,14 @@ import pytest
 import build_zip
 from learn_support import PLUGIN_ROOT, SKILL_DIR, TEMPLATE
 
-LOADER = PLUGIN_ROOT / "claude-ai" / "SKILL.md"
-TOOLS = PLUGIN_ROOT / "claude-ai" / "skills.md"
+NAMES = ["wiki-add", "wiki-learn", "wiki-quiz"]
+SCRIPTS = {"wiki-add": "skills/wiki-add/learn.py", "wiki-learn": "skills/wiki-add/learn.py",
+           "wiki-quiz": "skills/wiki-quiz/quiz.py"}
 RAW_PREFIX = "https://raw.githubusercontent.com/Doggy-Footprint/llm-wiki-plugin/main/"
+
+
+def loader(name: str) -> Path:
+    return PLUGIN_ROOT / "claude-ai" / name / "SKILL.md"
 
 
 def copy_plugin(tmp_path) -> Path:
@@ -36,52 +41,53 @@ def frontmatter(text: str) -> dict:
     return dict(ln.split(": ", 1) for ln in block.strip().split("\n"))
 
 
-def tool_rows() -> list[list[str]]:
-    rows = []
-    for ln in TOOLS.read_text(encoding="utf-8").splitlines():
-        cells = [c.strip() for c in ln.strip().strip("|").split("|")]
-        if ln.startswith("|") and len(cells) == 4 and cells[0] not in ("도구", "---"):
-            rows.append(cells)
-    return rows
+def built_names(paths) -> list[str]:
+    return [Path(p).name for p in paths]
 
 
-def test_loader_zip_holds_only_loader_skill(tmp_path):
-    out = tmp_path / "out" / "llm-wiki.zip"
+def test_one_loader_zip_per_tool_holding_only_its_skill(tmp_path):
+    out = tmp_path / "out"
     res = build_zip.build(PLUGIN_ROOT, out)
-    assert Path(res).resolve() == out.resolve()
-    ent = zip_entries(out)
-    assert set(ent) == {"llm-wiki/SKILL.md"}
-    assert ent["llm-wiki/SKILL.md"][2] == LOADER.read_bytes()
-    assert ent["llm-wiki/SKILL.md"][1] == 0o644
+    assert built_names(res) == [f"{n}.zip" for n in NAMES]
+    for n in NAMES:
+        ent = zip_entries(out / f"{n}.zip")
+        assert set(ent) == {f"{n}/SKILL.md"}
+        assert ent[f"{n}/SKILL.md"][2] == loader(n).read_bytes()
+        assert ent[f"{n}/SKILL.md"][1] == 0o644
 
 
-def test_loader_frontmatter_name_and_english_description():
-    fm = frontmatter(LOADER.read_text(encoding="utf-8"))
-    assert fm["name"] == "llm-wiki"
+@pytest.mark.parametrize("name", NAMES)
+def test_loader_frontmatter_name_and_english_description(name):
+    fm = frontmatter(loader(name).read_text(encoding="utf-8"))
+    assert set(fm) == {"name", "description"}
+    assert fm["name"] == name
     desc = fm["description"]
     assert desc.isascii() and 0 < len(desc) <= 1024
-    for name in ("add", "wiki-learn", "quiz"):
-        assert re.search(rf"\({re.escape(name)}\)", desc), name
+    # YAML plain scalars cannot contain ": ", which would break claude.ai's frontmatter parsing.
+    assert ": " not in desc
+    assert f'"/{name}' in desc
 
 
-def test_loader_points_at_public_repo_and_tool_list():
-    text = LOADER.read_text(encoding="utf-8")
-    assert "Doggy-Footprint/llm-wiki-plugin" in text and RAW_PREFIX in text
-    assert "`claude-ai/skills.md`" in text
+@pytest.mark.parametrize("name", NAMES)
+def test_loader_points_at_its_own_instructions_and_script(name):
+    text = loader(name).read_text(encoding="utf-8")
+    assert "Doggy-Footprint/llm-wiki-plugin" in text
+    assert f"`skills/{name}/claude-ai.md`" in text
+    assert RAW_PREFIX + SCRIPTS[name] in text
+    assert f"/tmp/llm-wiki/{Path(SCRIPTS[name]).name}" in text
+    for ref in re.findall(r"`(skills/[\w-]+/[\w.-]+)`", text):
+        assert (PLUGIN_ROOT / ref).is_file(), ref
 
 
-def test_tool_list_paths_exist_and_cover_every_chat_skill():
-    rows = tool_rows()
-    assert [r[0] for r in rows] == ["add", "wiki-learn", "quiz"]
-    for name, _, instr, script in rows:
-        assert (PLUGIN_ROOT / instr).is_file(), instr
-        assert (PLUGIN_ROOT / script).is_file(), script
-        assert instr == f"skills/{name}/claude-ai.md"
+def test_loaders_match_chat_instruction_folders():
     chat_skills = {p.parent.name for p in (PLUGIN_ROOT / "skills").glob("*/claude-ai.md")}
-    assert chat_skills == {r[0] for r in rows}
+    loader_names = {p.parent.name for p in (PLUGIN_ROOT / "claude-ai").glob("*/SKILL.md")}
+    assert chat_skills == loader_names == set(NAMES)
+    for n in NAMES:
+        assert frontmatter((PLUGIN_ROOT / "skills" / n / "SKILL.md").read_text(encoding="utf-8"))["name"] == n
 
 
-@pytest.mark.parametrize("name", ["add", "wiki-learn", "quiz"])
+@pytest.mark.parametrize("name", NAMES)
 def test_chat_instructions_reference_existing_repo_paths(name):
     text = (PLUGIN_ROOT / "skills" / name / "claude-ai.md").read_text(encoding="utf-8")
     assert "<skill 폴더>" not in text and "zip" not in text
@@ -92,18 +98,27 @@ def test_chat_instructions_reference_existing_repo_paths(name):
 def test_build_ignores_other_files(tmp_path):
     plug = copy_plugin(tmp_path)
     (plug / "claude-ai" / "notes.txt").write_text("stray\n")
+    (plug / "claude-ai" / "wiki-add" / "extra.md").write_text("stray\n")
     (plug / "claude-ai" / "__pycache__").mkdir()
     (plug / "claude-ai" / "__pycache__" / "x.pyc").write_bytes(b"\x00pyc")
-    out = tmp_path / "z.zip"
-    build_zip.build(plug, out)
-    assert set(zip_entries(out)) == {"llm-wiki/SKILL.md"}
+    out = tmp_path / "z"
+    assert built_names(build_zip.build(plug, out)) == [f"{n}.zip" for n in NAMES]
+    assert set(zip_entries(out / "wiki-add.zip")) == {"wiki-add/SKILL.md"}
+
+
+def test_build_picks_up_a_new_loader_folder(tmp_path):
+    plug = copy_plugin(tmp_path)
+    (plug / "claude-ai" / "wiki-new").mkdir()
+    (plug / "claude-ai" / "wiki-new" / "SKILL.md").write_text("---\nname: wiki-new\n---\n")
+    assert built_names(build_zip.build(plug, tmp_path / "z")) == [f"{n}.zip" for n in sorted(NAMES + ["wiki-new"])]
 
 
 def test_build_bytes_stable_across_mtime_and_clock(tmp_path, monkeypatch):
     plug = copy_plugin(tmp_path)
-    first = build_zip.build(plug, tmp_path / "a.zip").read_bytes()
+    first = [p.read_bytes() for p in build_zip.build(plug, tmp_path / "a")]
     year_2100 = 4102444800
-    os.utime(plug / "claude-ai" / "SKILL.md", (year_2100, year_2100))
+    for n in NAMES:
+        os.utime(plug / "claude-ai" / n / "SKILL.md", (year_2100, year_2100))
     real_time, real_lt, real_gt = time.time, time.localtime, time.gmtime
 
     def shifted():
@@ -112,36 +127,38 @@ def test_build_bytes_stable_across_mtime_and_clock(tmp_path, monkeypatch):
     monkeypatch.setattr(time, "time", shifted)
     monkeypatch.setattr(time, "localtime", lambda secs=None: real_lt(shifted() if secs is None else secs))
     monkeypatch.setattr(time, "gmtime", lambda secs=None: real_gt(shifted() if secs is None else secs))
-    assert build_zip.build(plug, tmp_path / "b.zip").read_bytes() == first
+    assert [p.read_bytes() for p in build_zip.build(plug, tmp_path / "b")] == first
 
 
-def test_cli_runs_in_process(tmp_path, monkeypatch):
-    out = tmp_path / "cli.zip"
-    monkeypatch.setattr(sys, "argv", ["build_zip.py", "--out", str(out)])
+def test_cli_runs_in_process(tmp_path, monkeypatch, capsys):
+    out = tmp_path / "cli"
+    monkeypatch.setattr(sys, "argv", ["build_zip.py", "--out-dir", str(out)])
     try:
         runpy.run_path(str(PLUGIN_ROOT / "scripts" / "build_zip.py"), run_name="__main__")
     except SystemExit as e:
         assert e.code in (None, 0)
-    assert set(zip_entries(out)) == {"llm-wiki/SKILL.md"}
+    assert sorted(p.name for p in out.iterdir()) == [f"{n}.zip" for n in NAMES]
+    assert capsys.readouterr().out.splitlines() == [str(out / f"{n}.zip") for n in NAMES]
 
 
 def test_cli_default_output_path(tmp_path):
     plug = copy_plugin(tmp_path)
     r = subprocess.run([sys.executable, str(plug / "scripts" / "build_zip.py")], cwd=plug, capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
-    assert set(zip_entries(plug / "dist" / "llm-wiki.zip")) == {"llm-wiki/SKILL.md"}
+    assert sorted(p.name for p in (plug / "dist").iterdir()) == [f"{n}.zip" for n in NAMES]
 
 
-def test_cli_rejects_removed_skill_option(tmp_path):
-    r = subprocess.run([sys.executable, str(PLUGIN_ROOT / "scripts" / "build_zip.py"), "--skill", "quiz",
-                        "--out", str(tmp_path / "x.zip")], capture_output=True, text=True)
-    assert r.returncode != 0 and not (tmp_path / "x.zip").exists()
+@pytest.mark.parametrize("opt", [["--skill", "wiki-quiz"], ["--out", "x.zip"]])
+def test_cli_rejects_removed_options(tmp_path, opt):
+    r = subprocess.run([sys.executable, str(PLUGIN_ROOT / "scripts" / "build_zip.py"), *opt],
+                       cwd=tmp_path, capture_output=True, text=True)
+    assert r.returncode != 0 and not list(tmp_path.iterdir())
 
 
-def test_release_uploads_the_built_loader_zip():
+def test_release_uploads_every_built_loader_zip():
     text = (PLUGIN_ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
-    assert "python3 scripts/build_zip.py --out dist/llm-wiki.zip" in text
-    assert re.search(r"gh release create \"\$tag\" dist/llm-wiki\.zip ", text)
+    assert "python3 scripts/build_zip.py --out-dir dist" in text
+    assert re.search(r"gh release create \"\$tag\" dist/\*\.zip ", text)
 
 
 def test_O16_Y2_plugin_concept_equals_template():
@@ -152,7 +169,7 @@ def test_O16_Y2_plugin_concept_equals_template():
 def test_O16_Y3_plugin_json_fields():
     data = json.loads((PLUGIN_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
     assert data["name"] == "llm-wiki"
-    assert data["version"] == "0.2.0"
+    assert data["version"] == "0.3.0"
     assert data["license"] == "MIT"
     assert "Doggy-Footprint" in json.dumps(data["author"])
     assert data["repository"] == "https://github.com/Doggy-Footprint/llm-wiki-plugin"
@@ -184,17 +201,7 @@ def test_O16_Y6_pep723_block_in_header():
 
 def test_O12_plugin_json_version_and_description():
     data = json.loads((PLUGIN_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
-    assert data["version"] == "0.2.0"
+    assert data["version"] == "0.3.0"
     desc = data["description"].lower()
-    assert "wiki-learn" in desc and "quiz" in desc and "add" in desc
-
-
-def test_O12_description_names_each_skill_as_a_word():
-    desc = json.loads((PLUGIN_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))["description"].lower()
-    for name in ("add", "wiki-learn", "quiz"):
-        assert re.search(rf"\b{re.escape(name)}\b", desc), name
-    # `add` and `quiz` must not be satisfied only by being part of `wiki-learn`
-    stripped = desc.replace("wiki-learn", " ")
-    assert re.search(r"\badd\b", stripped), "description must name add on its own"
-    assert re.search(r"\bquiz\b", stripped), "description must name quiz on its own"
-    assert re.search(r"\bwiki-learn\b", desc)
+    for name in NAMES:
+        assert re.search(rf"(?<![\w-]){re.escape(name)}(?![\w-])", desc), name

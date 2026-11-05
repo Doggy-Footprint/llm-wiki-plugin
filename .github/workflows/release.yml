@@ -15,7 +15,7 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - name: test
         run: >
-          PYTHONPATH=skills/add:skills/quiz:scripts uv run --no-project --with pytest --with pytest-cov
+          PYTHONPATH=skills/wiki-add:skills/wiki-quiz:scripts uv run --no-project --with pytest --with pytest-cov
           --with 'markitdown[pdf,docx,pptx]==0.1.9' --with fsrs==6.3.2
           python -m pytest tests --cov=learn --cov=quiz --cov=build_zip --cov-branch --cov-fail-under=90
       - name: release
@@ -28,5 +28,5 @@ jobs:
             echo "${tag} already exists; skipping release"
             exit 0
           fi
-          python3 scripts/build_zip.py --out dist/llm-wiki.zip
-          gh release create "$tag" dist/llm-wiki.zip --target "$GITHUB_SHA" --title "$tag" --generate-notes
+          python3 scripts/build_zip.py --out-dir dist
+          gh release create "$tag" dist/*.zip --target "$GITHUB_SHA" --title "$tag" --generate-notes

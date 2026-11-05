@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
-SKILL_DIR = PLUGIN_ROOT / "skills" / "add"
+SKILL_DIR = PLUGIN_ROOT / "skills" / "wiki-add"
 D = datetime.date(2026, 11, 5)
 DS = "2026-11-05"
 MARKER = "UNIQUE-MARKER-7f3a9c"

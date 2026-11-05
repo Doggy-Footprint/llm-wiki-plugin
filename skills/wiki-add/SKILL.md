@@ -1,9 +1,9 @@
 ---
-name: add
-description: Study a keyword, file, or URL through dialogue. Ask diagnostic questions to gauge understanding on the SOLO scale (0-4), teach at that level, then record the level, evidence, and misconceptions on the wiki concept page. Use for requests like "/add keyword", "/add file path or URL", "let's study this", "explain this and record my understanding level", or "/add import result file" (importing a result file made in claude.ai chat).
+name: wiki-add
+description: Study a keyword, file, or URL through dialogue. Ask diagnostic questions to gauge understanding on the SOLO scale (0-4), teach at that level, then record the level, evidence, and misconceptions on the wiki concept page. Use for requests like "/wiki-add keyword", "/wiki-add file path or URL", "let's study this", "explain this and record my understanding level", or "/wiki-add import result file" (importing a result file made in claude.ai chat).
 ---
 
-# add: 대화하며 공부하고 이해 수준을 위키에 기록
+# wiki-add: 대화하며 공부하고 이해 수준을 위키에 기록
 
 도구는 `uv run "<skill 폴더>/learn.py" <하위명령> ...`이다. `<skill 폴더>`는 이 skill이 로드될 때 Claude Code가 알려 주는 "Base directory"다. 출력은 JSON 한 줄이고, 실패하면 stderr 메시지와 종료 코드(2 잘못된 입력, 3 변환·내려받기 실패)를 준다.
 
@@ -17,7 +17,7 @@ description: Study a keyword, file, or URL through dialogue. Ask diagnostic ques
 - `has_wiki`가 false면 사용자에게 `root`에 위키를 새로 만들어도 되는지 묻고, 동의하면 `init`을 실행한다. 거절하면 기록 없이 대화만 한다.
 - 이후 모든 명령에 `--root <root>`를 붙인다.
 
-## (j) `/add import <파일>`
+## (j) `/wiki-add import <파일>`
 
 인자가 `import <파일>`이면 대화 없이 `import <파일>`만 실행하고 결과(`page`, `created`, `level`, `sections_added`, `changed`)를 보고한다. 그다음 (k)로 간다.
 

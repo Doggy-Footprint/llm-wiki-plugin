@@ -5,28 +5,35 @@ import argparse
 import zipfile
 from pathlib import Path
 
-TOP = "llm-wiki"
-ZIP_NAME = f"{TOP}.zip"
+
+def loaders(plugin_dir: Path) -> list[Path]:
+    return sorted(Path(plugin_dir).glob("claude-ai/*/SKILL.md"))
 
 
-def build(plugin_dir: Path, out: Path) -> Path:
-    data = (Path(plugin_dir) / "claude-ai" / "SKILL.md").read_bytes()
-    out = Path(out)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
-        info = zipfile.ZipInfo(f"{TOP}/SKILL.md", date_time=(2026, 1, 1, 0, 0, 0))
-        info.external_attr = 0o644 << 16
-        z.writestr(info, data, zipfile.ZIP_DEFLATED)
-    return out
+def build(plugin_dir: Path, out_dir: Path) -> list[Path]:
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    built = []
+    for skill in loaders(plugin_dir):
+        name = skill.parent.name
+        out = out_dir / f"{name}.zip"
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+            info = zipfile.ZipInfo(f"{name}/SKILL.md", date_time=(2026, 1, 1, 0, 0, 0))
+            info.external_attr = 0o644 << 16
+            z.writestr(info, skill.read_bytes(), zipfile.ZIP_DEFLATED)
+        built.append(out)
+    return built
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description="claude.ai용 로더 skill zip 빌드")
-    p.add_argument("--out", default=None, help=f"기본값: <플러그인 폴더>/dist/{ZIP_NAME}")
+    p = argparse.ArgumentParser(description="claude.ai용 로더 skill zip 빌드 (claude-ai/<이름>/SKILL.md마다 <이름>.zip 하나)",
+                                allow_abbrev=False)
+    p.add_argument("--out-dir", default=None, help="기본값: <플러그인 폴더>/dist")
     args = p.parse_args(argv)
     plugin_dir = Path(__file__).resolve().parent.parent
-    out = Path(args.out) if args.out else plugin_dir / "dist" / ZIP_NAME
-    print(build(plugin_dir, out))
+    out_dir = Path(args.out_dir) if args.out_dir else plugin_dir / "dist"
+    for path in build(plugin_dir, out_dir):
+        print(path)
     return 0
 
 
