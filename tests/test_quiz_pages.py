@@ -1,4 +1,3 @@
-"""O1: concept_pages equivalence partitions P1-P6."""
 import pytest
 
 import quiz

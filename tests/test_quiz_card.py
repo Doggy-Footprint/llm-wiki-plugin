@@ -1,4 +1,3 @@
-"""O4 (card content, caps) and O5 (card path rejection)."""
 import pytest
 
 import quiz
@@ -45,8 +44,6 @@ def test_O4_level_none_and_title_stem(tmp_path):
     c = quiz.card(root, P)
     assert c["level"] is None and c["title"] == "A"
 
-
-# ----- caps -----
 
 @pytest.mark.parametrize("n,truncated", [(299, False), (300, False), (301, True), (450, True)])
 def test_O4_C10_summary_cap(tmp_path, n, truncated):
@@ -105,8 +102,6 @@ def test_O4_misconceptions_ignore_non_bullet_lines(tmp_path):
     assert quiz.card(root, P)["misconceptions"] == ["m1", "m2"]
 
 
-# ----- links -----
-
 def test_O4_links_alias_anchor_placeholder_duplicate(tmp_path):
     body = "\n".join([
         "- [[Beta]] — 관계",
@@ -135,8 +130,6 @@ def test_O4_links_max_ten_in_order(tmp_path, n, want):
     root = mk(tmp_path, [("연결", body)])
     assert quiz.card(root, P)["links"] == [f"T{i:02d}" for i in range(1, want + 1)]
 
-
-# ----- missing sections / placeholders -----
 
 def test_O4_missing_sections_give_empty_values(tmp_path):
     root = mk(tmp_path, [("보충 (LLM)", "x")])
@@ -176,7 +169,6 @@ def test_O4_crlf_page_has_no_carriage_returns(tmp_path):
 
 
 def test_O4_card_on_page_without_dates_still_works(tmp_path):
-    """Errors: a page without created/updated is still usable by card."""
     root = mk(tmp_path, [("요약", "S")], created=None)
     assert quiz.card(root, P)["summary"] == "S"
 
@@ -190,11 +182,9 @@ def test_O4_card_does_not_write(tmp_path):
     assert snapshot(root) == before
 
 
-# ----- O5 -----
-
 def test_O5_dotdot_rejected(tmp_path):
     root = mk(tmp_path, [("요약", "S")])
-    page(tmp_path, "outside.md", created="2026-11-01")  # a real concept page outside root
+    page(tmp_path, "outside.md", created="2026-11-01")
     expect_quiz_error(lambda: quiz.card(root, "../outside.md"), root)
     expect_quiz_error(lambda: quiz.card(root, "wiki/../../outside.md"), root)
     expect_quiz_error(lambda: quiz.card(root, "../x.md"), root)

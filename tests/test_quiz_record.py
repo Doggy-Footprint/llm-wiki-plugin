@@ -1,4 +1,3 @@
-"""O7: record."""
 import datetime
 import re
 
@@ -49,7 +48,7 @@ def test_O7_appends_without_changing_existing_bytes(tmp_path):
 
 
 def test_O7_deck_rewritten_and_reflects_new_review(tmp_path):
-    root = study_root(tmp_path, pages=("A",))  # created 11-01 -> due 11-03
+    root = study_root(tmp_path, pages=("A",))
     write(root / "chat" / "deck.md", "STALE")
     quiz.record(root, [(A, "good")], D, NOW)
     text = deck_bytes(root).decode()
@@ -193,7 +192,7 @@ def test_O7_record_rejects_control_backslash_pipe_in_page(tmp_path, stem):
     root = study_root(tmp_path)
     rel = f"wiki/study/{stem}.md"
     try:
-        page(root, rel, created="2026-11-01")  # the page really exists
+        page(root, rel, created="2026-11-01")
     except OSError:
         pytest.skip("filesystem cannot hold this name")
     expect_quiz_error(lambda: quiz.record(root, [(rel, "good")], D, NOW), root)

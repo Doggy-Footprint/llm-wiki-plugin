@@ -127,8 +127,6 @@ def test_O16_Y6_pep723_block_in_header():
     assert any("markitdown[pdf,docx,pptx]==0.1.9" in ln for ln in block)
 
 
-# ---------------- O12: wiki-learn / wiki-quiz zips, build_all, plugin.json ----------------
-
 SKILLS = PLUGIN_ROOT / "skills"
 LEARN_DIR = SKILLS / "wiki-learn"
 QUIZ_DIR = SKILLS / "quiz"
@@ -293,9 +291,9 @@ def build_three(plug, out_dir):
 def test_O12_zip_bytes_unchanged_when_source_mtimes_change(tmp_path):
     plug = copy_plugin(tmp_path)
     first = build_three(plug, tmp_path / "b1")
-    far = 4102444800  # year 2100
+    year_2100 = 4102444800
     for p in (plug / "skills").rglob("*"):
-        os.utime(p, (far, far))
+        os.utime(p, (year_2100, year_2100))
     second = build_three(plug, tmp_path / "b2")
     assert first == second
 

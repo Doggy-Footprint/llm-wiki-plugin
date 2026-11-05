@@ -6,7 +6,6 @@ import re
 import zipfile
 from pathlib import Path
 
-# 이름: (zip 최상위 폴더, SKILL.md의 name 치환 대상, [(zip 안 파일 이름, skills/ 아래 원본 경로)])
 # claude.ai 계정 안에서 `add`·`quiz`는 너무 일반적인 이름이라 zip에서만 바꾼다.
 SKILLS: dict[str, tuple[str, str | None, list[tuple[str, str]]]] = {
     "add": ("wiki-add", "add", [(n, f"add/{n}") for n in ("SKILL.md", "learn.py", "concept.md", "claude-ai.md")]),

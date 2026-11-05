@@ -1,4 +1,3 @@
-"""O8: make_result and import_result (syntax testing of the quiz-result file)."""
 import datetime
 import re
 from pathlib import Path
@@ -25,8 +24,6 @@ def out(tmp_path):
     o.mkdir()
     return o
 
-
-# ---------------- make_result ----------------
 
 def test_O8_F8_exact_text_and_return(out):
     res = quiz.make_result([(A, "good"), (B, "again")], D, out, NOW)
@@ -99,8 +96,6 @@ def test_O8_C24_rejected_no_file(out, entries):
     assert snapshot(out) == before and list(out.iterdir()) == []
 
 
-# ---------------- import_result ----------------
-
 @pytest.fixture
 def env(tmp_path):
     root = study_root(tmp_path)
@@ -119,7 +114,7 @@ def test_O8_C15_make_result_then_import(tmp_path, out):
         "2026-11-04,wiki/study/A.md,good,review,chat,chat-2026-11-04T093015\n"
         "2026-11-04,wiki/study/B.md,again,review,chat,chat-2026-11-04T093015\n"
     ).encode("utf-8")
-    assert deck_bytes(root) is None  # import does not write the deck
+    assert deck_bytes(root) is None
 
 
 def test_O8_import_appends_to_existing_csv_bytes(env):
@@ -297,7 +292,6 @@ def test_O8_dash_line_without_pipe_is_not_an_entry(tmp_path, line):
 
 
 def test_O8_v3_quoted_frontmatter_values_in_result_file(tmp_path):
-    """Quoted values are unquoted like scripts/_lib.frontmatter."""
     root = study_root(tmp_path)
     f = result_file(tmp_path / "in", "q.quiz.md", type='"quiz-result"', version="'1'", id='"id-q"',
                     date='"2026-11-04"', mode="'review'", source='"chat"')

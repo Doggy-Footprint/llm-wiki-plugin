@@ -1,4 +1,3 @@
-"""O9: sync scenarios C19, C20 and the learn-module-missing error."""
 import importlib.util
 import json
 import shutil
@@ -85,7 +84,7 @@ def test_O9_sync_processes_in_name_order(tmp_path):
     assert res["quiz"] == ["id-a", "id-b"] and res["failed"] == []
     rows = csv_bytes(root).decode().splitlines()[1:]
     assert [r.split(",")[5] for r in rows] == ["id-a", "id-b"]
-    assert [p.name for p in ib.iterdir()] == [".gitkeep"]  # F10 creates it when absent
+    assert [p.name for p in ib.iterdir()] == [".gitkeep"]
 
 
 def test_O9_duplicate_file_is_deleted_not_failed_csv_unchanged(tmp_path):
@@ -96,7 +95,7 @@ def test_O9_duplicate_file_is_deleted_not_failed_csv_unchanged(tmp_path):
     result_file(ib, "dup.quiz.md", id="id-x", entries=["- wiki/study/B.md | again"])
     res = quiz.sync(root, D)
     assert res["failed"] == []
-    assert res["quiz"] == ["id-x"]  # v3: duplicate-skipped ids are listed
+    assert res["quiz"] == ["id-x"]
     assert not (ib / "dup.quiz.md").exists()
     assert csv_bytes(root) == before
 
@@ -151,8 +150,6 @@ def test_O9_csv_created_only_when_rows_appended(tmp_path):
     quiz.sync(root, D)
     assert csv_bytes(root).decode().startswith(HEADER_LINE + "\n")
 
-
-# ---- learn module unavailable ----
 
 def load_isolated(path, name="quiz_isolated"):
     spec = importlib.util.spec_from_file_location(name, path)

@@ -79,7 +79,6 @@ def deck_bytes(root: Path):
 
 
 def oracle_due(created: str, rows) -> datetime.date:
-    """F3 oracle: fsrs called directly. rows = [(date 'YYYY-MM-DD', rating)] in file order."""
     from fsrs import Card, Rating, Scheduler
 
     sch = Scheduler(desired_retention=0.9, learning_steps=(), relearning_steps=(), enable_fuzzing=False)
@@ -144,7 +143,6 @@ def one_json(out: str):
 
 
 def oracle_events_due(events) -> datetime.date:
-    """Replay already-ordered events [(date, rating)] with the F3 scheduler (no sorting)."""
     from fsrs import Card, Rating, Scheduler
 
     sch = Scheduler(desired_retention=0.9, learning_steps=(), relearning_steps=(), enable_fuzzing=False)

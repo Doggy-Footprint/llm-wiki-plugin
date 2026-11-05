@@ -75,8 +75,6 @@ def _atomic_write(path: Path, data: bytes) -> None:
         tmp.unlink(missing_ok=True)
 
 
-# ---------------------------------------------------------------- pages
-
 def _unquote(v: str) -> str:
     v = v.strip()
     if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
@@ -276,8 +274,6 @@ def frontier(root: Path, limit: int = FRONTIER_MAX) -> list[dict]:
     return _frontier(pages, stems, limit)
 
 
-# ---------------------------------------------------------------- reviews.csv
-
 def _read_csv(root: Path) -> tuple[list[dict], list[str], set[str]]:
     p = root / CSV_NAME
     if not p.is_file():
@@ -327,10 +323,7 @@ def _append_rows(root: Path, rows: Sequence[Sequence[str]]) -> None:
     _atomic_write(p, old + head + buf.getvalue().encode("utf-8"))
 
 
-# ---------------------------------------------------------------- scheduling
-
 def _schedule(pages: list[_Page], rows: list[dict]) -> dict[str, dict]:
-    """페이지별 {due, reviews, last_rating, last_date}. fsrs는 여기서만 import한다."""
     import fsrs
 
     scheduler = fsrs.Scheduler(desired_retention=0.9, learning_steps=(), relearning_steps=(), enable_fuzzing=False)
@@ -388,8 +381,6 @@ def due(root: Path, date: datetime.date, limit: int = DUE_DEFAULT) -> dict:
     pages, page_warnings, _ = _scan(root)
     return _due(root, pages, page_warnings, date, limit)
 
-
-# ---------------------------------------------------------------- record / result
 
 def _check_entries(entries: Sequence[tuple[str, str]], page_check) -> list[tuple[str, str]]:
     entries = [tuple(e) for e in entries]
@@ -489,8 +480,6 @@ def import_result(path: Path, root: Path) -> dict:
     _append_rows(root, [[d.isoformat(), p, r, "review", source, rid] for p, r in entries])
     return {"added": len(entries), "skipped": False, "result_id": rid}
 
-
-# ---------------------------------------------------------------- deck / sync
 
 def _level_text(level: int | None) -> str:
     return "L-" if level is None else f"L{level}"
@@ -593,8 +582,6 @@ def sync(root: Path, date: datetime.date) -> dict:
     out = deck(root, date)
     return {"quiz": quiz_ids, "learn": learned, "failed": failed, "deck": out["path"]}
 
-
-# ---------------------------------------------------------------- CLI
 
 def _find_git_top(cwd: Path) -> Path | None:
     for d in [cwd, *cwd.parents]:

@@ -1,4 +1,3 @@
-"""O6: frontier decision table."""
 import pytest
 
 import quiz
@@ -26,12 +25,12 @@ def test_O6_rule_sort_keys_len_then_level_then_title(tmp_path):
     page(root, "wiki/s/A.md", level=3, sections=links("[[X]]", "[[Y]]", "[[Z]]", "[[W]]"))
     page(root, "wiki/s/B.md", level=1, sections=links("[[X]]"))
     page(root, "wiki/s/C.md", level=4, sections=links("[[Zq]]"))
-    page(root, "wiki/s/D.md", sections=links("[[P]]"))           # level None
-    page(root, "wiki/s/E.md", level=0, sections=links("[[R]]"))  # level 0 beats None
+    page(root, "wiki/s/D.md", sections=links("[[P]]"))
+    page(root, "wiki/s/E.md", level=0, sections=links("[[R]]"))
     got = quiz.frontier(root)
     assert [(g["title"], g["max_level"]) for g in got] == [
-        ("X", 3),      # two linkers first
-        ("Zq", 4),     # then max_level desc (title is last in the key)
+        ("X", 3),
+        ("Zq", 4),
         ("W", 3), ("Y", 3), ("Z", 3),
         ("R", 0),
         ("P", None),
@@ -61,7 +60,7 @@ def test_O6_existing_target_in_any_wiki_folder_is_not_frontier(tmp_path):
     root = tmp_path / "r"
     page(root, "wiki/s/A.md", sections=links("[[Deep]]", "[[Jr]]", "[[Missing]]"))
     page(root, "wiki/a/b/c/Deep.md", created="2026-11-01")
-    page(root, "wiki/journal/Jr.md", type_="journal")  # exists as a file, not a concept
+    page(root, "wiki/journal/Jr.md", type_="journal")
     assert [g["title"] for g in quiz.frontier(root)] == ["Missing"]
 
 
@@ -95,7 +94,7 @@ def test_O6_fresh_root_without_pages(tmp_path):
 def many(tmp_path, n):
     root = tmp_path / "r"
     body = [f"[[T{i:02d}]]" for i in range(1, n + 1)]
-    for k in range(0, n, 5):  # keep each page under 10 links
+    for k in range(0, n, 5):
         page(root, f"wiki/s/P{k}.md", sections=links(*body[k:k + 5]))
     return root
 

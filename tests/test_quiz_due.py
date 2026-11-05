@@ -1,4 +1,3 @@
-"""O2 (FSRS replay vs in-test fsrs oracle) and O3 (due boundaries and order)."""
 import datetime
 
 import pytest
@@ -84,10 +83,10 @@ def test_O2_E3_again_row_after_good(tmp_path):
 def test_O2_E4_E5_E6_broken_rows_skipped_and_named(tmp_path):
     root = one_page_root(tmp_path)
     write_csv(root, [
-        row("2026-13-40", P, "good"),            # line 2: invalid date
-        row("2026-11-03", P, "ok"),              # line 3: invalid rating
-        "2026-11-03," + P,                       # line 4: short row
-        row("2026-11-03", P, "good"),            # line 5: valid
+        row("2026-13-40", P, "good"),
+        row("2026-11-03", P, "ok"),
+        "2026-11-03," + P,
+        row("2026-11-03", P, "good"),
     ])
     res = quiz.due(root, FAR, 10)
     it = item(res)
@@ -106,7 +105,6 @@ def test_O2_E4_E5_E6_broken_rows_skipped_and_named(tmp_path):
     ("2026-11-03,%s,,review,code,r1" % P, 2),
 ])
 def test_O2_E4_E5_E6_each_bad_row_alone(tmp_path, bad, line):
-    """Fields listed in F3: invalid date/rating/missing fields."""
     root = one_page_root(tmp_path)
     write_csv(root, [bad])
     res = quiz.due(root, FAR, 10)
@@ -224,10 +222,8 @@ def test_O2_header_only_csv(tmp_path):
     assert res["warnings"] == [] and len(res["items"]) == 1
 
 
-# ---------------- O3 ----------------
-
 def test_O3_C3_due_date_boundary_three_values(tmp_path):
-    root = one_page_root(tmp_path)  # due 2026-11-03
+    root = one_page_root(tmp_path)
     assert quiz.due(root, d("2026-11-02"))["items"] == []
     on = quiz.due(root, d("2026-11-03"))["items"]
     assert len(on) == 1 and on[0]["overdue_days"] == 0
@@ -261,8 +257,8 @@ def test_O3_default_limit_is_five(tmp_path):
 
 def test_O3_limit_cuts_after_sorting(tmp_path):
     root = tmp_path / "r"
-    page(root, "wiki/study/A.md", created="2026-11-01")  # overdue 0
-    page(root, "wiki/study/B.md", created="2026-10-28")  # overdue 4
+    page(root, "wiki/study/A.md", created="2026-11-01")
+    page(root, "wiki/study/B.md", created="2026-10-28")
     res = quiz.due(root, d("2026-11-03"), 1)
     assert [i["path"] for i in res["items"]] == ["wiki/study/B.md"]
 
@@ -270,9 +266,9 @@ def test_O3_limit_cuts_after_sorting(tmp_path):
 def test_O3_C5_order_overdue_desc_then_path_asc(tmp_path):
     root = tmp_path / "r"
     # titles deliberately sort opposite to paths
-    page(root, "wiki/study/D.md", title="Aaa", created="2026-11-01")  # overdue 0
-    page(root, "wiki/study/C.md", title="Zed", created="2026-10-28")  # overdue 4
-    page(root, "wiki/study/A.md", title="Mid", created="2026-10-28")  # overdue 4
+    page(root, "wiki/study/D.md", title="Aaa", created="2026-11-01")
+    page(root, "wiki/study/C.md", title="Zed", created="2026-10-28")
+    page(root, "wiki/study/A.md", title="Mid", created="2026-10-28")
     res = quiz.due(root, d("2026-11-03"))
     assert [(i["path"], i["overdue_days"]) for i in res["items"]] == [
         ("wiki/study/A.md", 4), ("wiki/study/C.md", 4), ("wiki/study/D.md", 0),
@@ -288,8 +284,6 @@ def test_O3_item_fields_for_page_with_rows(tmp_path):
     assert it["title"] == "Alpha" and it["level"] == 1
     assert (it["last_rating"], it["last_date"]) == ("good", "2026-11-04")
 
-
-# ---------------- v3 clarifications ----------------
 
 def test_O2_v3_last_is_last_in_replay_order_not_file_order(tmp_path):
     root = one_page_root(tmp_path)
@@ -307,11 +301,11 @@ def test_O2_v3_last_same_date_takes_later_file_row(tmp_path):
 
 
 @pytest.mark.parametrize("bad", [
-    "2026-11-03,%s,GOOD,review,code,r1" % P,        # case-sensitive rating
+    "2026-11-03,%s,GOOD,review,code,r1" % P,
     "2026-11-03,%s,Good,review,code,r1" % P,
-    "2026-11-03,%s,good,review,code" % P,           # 5 columns
+    "2026-11-03,%s,good,review,code" % P,
     "2026-11-03,%s,good" % P,
-    "2026-11-03,,good,review,code,r1",              # empty page
+    "2026-11-03,,good,review,code,r1",
     "2026-13-03,%s,good,review,code,r1" % P,
 ])
 def test_O2_v3_broken_row_definition(tmp_path, bad):
@@ -324,8 +318,8 @@ def test_O2_v3_broken_row_definition(tmp_path, bad):
 
 
 @pytest.mark.parametrize("good_row", [
-    "2026-11-03,%s,good,other,web,r1" % P,   # mode/source values are not checked
-    "2026-11-03,%s,good,,,"  % P,            # empty mode/source/result_id
+    "2026-11-03,%s,good,other,web,r1" % P,
+    "2026-11-03,%s,good,,,"  % P,
     "2026-11-03,%s,good,review,code,r1,extra" % P,
 ])
 def test_O2_v3_mode_source_result_id_not_checked(tmp_path, good_row):
@@ -359,7 +353,7 @@ def test_O2_v3_non_utf8_wiki_file_warned_and_skipped(tmp_path):
     res = quiz.due(root, FAR, 10)
     assert [i["path"] for i in res["items"]] == [P]
     assert len(res["warnings"]) == 1 and res["warnings"][0].startswith("wiki/study/Bad.md")
-    assert res["orphans"] == 1  # not a concept page, so its csv row is an orphan
+    assert res["orphans"] == 1
 
 
 def test_O2_v3_quoted_frontmatter_created_schedules(tmp_path):
@@ -368,8 +362,6 @@ def test_O2_v3_quoted_frontmatter_created_schedules(tmp_path):
     it = item(quiz.due(root, d("2026-11-03")))
     assert it["due"] == "2026-11-03" and it["level"] == 2
 
-
-# ---------------- v4: E11 / E12 ----------------
 
 @pytest.mark.parametrize("bad_created", ["2026-02-30", "soon", "2026-13-01", "11/01/2026"])
 def test_O2_E11_invalid_created_falls_back_to_updated(tmp_path, bad_created):

@@ -1,4 +1,3 @@
-"""O11: deck exact bytes (C21), 9/10/11 boundaries (C22), warnings, Q1 size, Q2 timing."""
 import datetime
 import time
 
@@ -33,7 +32,7 @@ def alpha_beta_root(tmp_path, extra_rows=()):
 def expected_alpha_beta(with_warning_line=None):
     da = oracle_due("2026-10-20", [("2026-11-01", "again")])
     overdue = (D - da).days
-    assert overdue >= 0  # the fixture needs Alpha due on or before the deck date
+    assert overdue >= 0
     assert oracle_due("2026-11-03", []) == D
     lines = [
         "---", "type: quiz-deck", "version: 1", "generated: 2026-11-05", "---",
@@ -99,12 +98,12 @@ def test_O11_layout_rules_eol_trailing(tmp_path):
 
 
 def test_O11_C21_with_warning_line_prefix_only(tmp_path):
-    root = alpha_beta_root(tmp_path, extra_rows=[row("2026-11-02", A_, "ok")])  # csv line 3
+    root = alpha_beta_root(tmp_path, extra_rows=[row("2026-11-02", A_, "ok")])
     res = quiz.deck(root, D)
     got = text_of(root).split("\n")
     prefix = "- data/reviews.csv:3: "
     want = expected_alpha_beta(with_warning_line=prefix).split("\n")
-    assert got[:-2] == want[:-2]          # everything up to and including "## Warnings"
+    assert got[:-2] == want[:-2]
     assert got[-2].startswith(prefix) and got[-1] == ""
     assert got[-4] == "" and got[-3] == "## Warnings"
     assert res["chars"] == len(text_of(root))
@@ -143,7 +142,7 @@ def test_O11_empty_wiki_exact_bytes(tmp_path):
 
 def test_O11_zero_due_zero_frontier_with_known_exact(tmp_path):
     root = tmp_path / "r"
-    page(root, "wiki/study/Later.md", created="2026-11-05")  # first due 2026-11-07
+    page(root, "wiki/study/Later.md", created="2026-11-05")
     quiz.deck(root, D)
     assert text_of(root) == (
         "---\ntype: quiz-deck\nversion: 1\ngenerated: 2026-11-05\n---\n# Quiz deck\n\n"
@@ -177,7 +176,7 @@ def test_O11_level_lines_for_all_levels(tmp_path):
 
 def test_O11_due_item_order_follows_due_rule(tmp_path):
     root = tmp_path / "r"
-    page(root, "wiki/s/B.md", title="First", created="2026-10-28")   # overdue 6d
+    page(root, "wiki/s/B.md", title="First", created="2026-10-28")
     page(root, "wiki/s/A.md", title="Second", created="2026-11-01")
     page(root, "wiki/s/C.md", title="Third", created="2026-11-01")
     quiz.deck(root, D)
@@ -198,8 +197,6 @@ def test_O11_caps_applied_in_deck_items(tmp_path):
     assert "- misconceptions:\n  - m2\n  - m3\n  - m4\n" in t and "  - m1" not in t
     assert "- links: " + ", ".join(f"T{i:02d}" for i in range(1, 11)) + "\n" in t
 
-
-# ---------------- C22 boundaries ----------------
 
 def due_root(tmp_path, n):
     root = tmp_path / "r"
@@ -243,8 +240,6 @@ def test_O11_C22_twelve_and_twelve(tmp_path):
     t = text_of(root)
     assert "## Due (10)\n" in t and "## Frontier (10)\n" in t and "## Known (12)\n" in t
 
-
-# ---------------- Q1 / Q2 ----------------
 
 def long_text(n, seed):
     return (seed + "".join(chr(0xAC00 + (i * 7) % 11000) for i in range(n)))[:n]
@@ -320,8 +315,6 @@ def test_O11_v3_header_mismatch_warning_line(tmp_path):
     assert t.split("## Warnings\n")[1].startswith("- data/reviews.csv:1: ")
 
 
-# ---------------- v4: frontier in the deck ----------------
-
 def frontier_lines(root):
     return text_of(root).split("## Frontier (")[1].split("\n\n## ")[0].split("\n")[1:]
 
@@ -337,7 +330,7 @@ def test_O11_v4_frontier_line_with_multiple_sources_sorted_titles(tmp_path):
 
 def test_O11_v4_frontier_order_and_cut_follow_F6_keys_not_title(tmp_path):
     root = tmp_path / "r"
-    linkers = {}  # target -> {title: level|None}
+    linkers = {}
 
     def mk(title, level, targets):
         page(root, f"wiki/s/{title}.md", title=title, level=level, created="2026-11-05",

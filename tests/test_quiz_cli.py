@@ -1,4 +1,3 @@
-"""O10: CLI commands, root resolution, exit codes, no-fsrs paths; parse_date."""
 import datetime
 import json
 import re
@@ -24,8 +23,6 @@ def mkroot(tmp_path, name="root"):
     page(root, B, created="2026-11-01")
     return root
 
-
-# ---------------- commands ----------------
 
 def test_O10_C25_due(tmp_path, capsys):
     root = mkroot(tmp_path)
@@ -130,15 +127,12 @@ def test_O10_C25_deck(tmp_path, capsys):
 
 
 def test_O10_default_date_is_today_with_rollover(tmp_path, capsys):
-    """--date omitted: both due and deck accept it (value comes from the clock, not asserted)."""
     root = mkroot(tmp_path)
     rc, out, _ = cli(capsys, ["--root", str(root), "due"])
     assert rc == 0 and "items" in one_json(out)
     rc, out, _ = cli(capsys, ["--root", str(root), "deck"])
     assert rc == 0 and re.search(r"^generated: \d{4}-\d{2}-\d{2}$", deck_bytes(root).decode(), re.M)
 
-
-# ---------------- root resolution ----------------
 
 def test_O10_root_flag_beats_env(tmp_path, capsys):
     root = mkroot(tmp_path, "real")
@@ -181,8 +175,6 @@ def test_O10_Q8_fresh_root_with_only_wiki(tmp_path, capsys):
     assert csv_bytes(root) is None and not (root / "data").exists()
     assert (root / "chat" / "deck.md").exists()
 
-
-# ---------------- errors ----------------
 
 ERRORS = [
     ["due", "--limit", "0"],
@@ -236,8 +228,6 @@ def test_O10_import_bad_file_exit_two(tmp_path, capsys):
     assert rc == 2 and out == "" and "bad.quiz.md" in err
     assert csv_bytes(root) is None
 
-
-# ---------------- subprocess: script entry, fsrs blocked ----------------
 
 def test_O10_script_entry_point(tmp_path):
     root = mkroot(tmp_path)
@@ -296,8 +286,6 @@ def test_O10_C26_control_scheduling_needs_fsrs(tmp_path):
         "sys.exit(rc)\n"))
     assert r.returncode != 0
 
-
-# ---------------- parse_date ----------------
 
 def dt(h, m=0, day=5):
     return datetime.datetime(2026, 11, day, h, m)
