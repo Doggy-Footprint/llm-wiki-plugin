@@ -63,7 +63,7 @@ claude.ai 채팅은 위키 저장소에 접근할 수 있을 때 아래 두 경�
 목표를 듣고 기존 목표와 합칠지 나눌지 정한 뒤, 영역(비중)·개념·선수 관계가 있는 목표 지도 `goals/<id>.toml`을 만든다 (형식은 `skills/wiki-goal/example.toml`). 쓰기 전에 확인을 받고 `goal.py check`로 검증한다. 위키에 노트가 있으면 `suggest`가 개념마다 후보 노트를 찾고, 사용자가 맞다고 한 것만 `data/goal_links.csv`에 기록한다. 끝에 `start`가 지금 공부할 개념을 추천한다.
 
 - 노트 검색은 SQLite 키워드 색인(`<root>/.cache/`)이다. `OPENAI_API_KEY`(환경 변수나 위키 root의 `.env`)가 있으면 임베딩 검색을 더한다. 모델과 차원은 위키 root `config.toml`의 `[embedding]`(`model`, `dim`)으로 바꾼다. 로컬 모델을 쓰려면 `[embedding]`에 `command`(문자열 배열, 첫 원소가 `/`를 포함한 상대 경로면 위키 root 기준)를 둔다. 그러면 OpenAI 대신 이 명령을 위키 root에서 실행해 stdin으로 `{"model", "dim", "texts"}` JSON을 주고 stdout의 `{"vectors": [[...], ...]}` JSON을 받는다(0이 아닌 종료 코드는 실패, stderr 마지막 줄이 오류 메시지가 된다).
-- `type: insight` 페이지(주관적 기록)는 임베딩하지 않아 외부 API로 보내지 않고 키워드로만 찾는다. `search --type <type>`(반복 가능)은 결과를 그 type으로 거르고, 요청한 type이 모두 insight면 검색어도 임베딩하지 않는다. 결과에는 페이지의 `type`, `status`가 붙고 `status: obsolete`는 뒤로 밀린다. `suggest`는 `type: concept` 페이지만 후보로 넣는다.
+- `[embedding] skip_types`(기본 `["insight"]`)의 type 페이지는 임베딩하지 않아 외부 API로 보내지 않고 키워드로만 찾는다. 로컬 임베더를 쓰면 `skip_types = []`로 모든 페이지를 임베딩할 수 있다. `search --type <type>`(반복 가능)은 결과를 그 type으로 거르고, 요청한 type이 모두 `skip_types`에 들면 검색어도 임베딩하지 않는다. 결과에는 페이지의 `type`, `status`가 붙고 `status: obsolete`는 뒤로 밀린다. `suggest`는 `type: concept` 페이지만 후보로 넣는다.
 - `goal.py`의 하위명령: `list`, `check`, `suggest`, `confirm`, `reject`, `coverage`, `start`, `overlap`. `index.py`는 `build`, `embed`, `search`, `plist`(macOS launchd로 매일 색인·임베딩, 출력에 이 파일의 절대 경로가 들어가므로 플러그인을 업데이트하면 다시 만든다).
 
 ## Claude 앱 Code 탭 (클라우드 세션)
