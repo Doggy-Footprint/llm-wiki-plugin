@@ -1,6 +1,6 @@
 # Review and exploration quizzes in claude.ai chat
 
-This is the procedure for claude.ai chat. The wiki lives in a GitHub repository; this chat reads only `chat/deck.md` there. Do not open pages. Upload the result as one file under `chat/inbox/`. Use the repository named in the user's prompt; if none, the one named in the loader skill. Ask first only when neither names one.
+This is the procedure for claude.ai chat. The wiki lives in a GitHub repository; this chat reads only `chat/deck.md` there. Do not open pages. Upload the result as one file under `chat/inbox/`. Use the repository named in the user's prompt; if none, the GitHub repository `Doggy-Footprint/LLM-wiki` (default branch `master`). A `skills/<name>/...` path in this file is a file of this plugin's `<name>` skill; this skill's own files are next to this file, in `<this folder>`.
 
 Talk with the user in Korean. Quoted messages below are said to the user as written.
 
@@ -39,7 +39,7 @@ For explore, ask one pretest question, explain briefly, and offer to study the c
 
 Collect the grades of the graded items, show them, and get confirmation. Do not create the file before confirmation. If no item was graded, create no file and commit nothing. For concepts graded again in review, suggest studying them with `/wiki-learn` or `/wiki-add`.
 
-**If code execution is on**, create it with `<script dir>/quiz.py`. `<script dir>` is the folder where the loader skill downloaded this script.
+**If code execution is on**, create it with `<script dir>/quiz.py`. `<script dir>` is `/tmp/llm-wiki`. Before the first run, copy the script there once: `mkdir -p /tmp/llm-wiki && cp "<this folder>/quiz.py" /tmp/llm-wiki/`.
 
 ```
 python3 "<script dir>/quiz.py" result --out /mnt/user-data/outputs --date YYYY-MM-DD \
@@ -48,7 +48,7 @@ python3 "<script dir>/quiz.py" result --out /mnt/user-data/outputs --date YYYY-M
 
 The `path` in the output JSON is the created file.
 
-**If code execution is off or the script could not be downloaded**, write it yourself in exactly the format below. The file name is `<날짜>-<HHMMSS>.quiz.md`. The first line must be `---`.
+**If code execution is off or the script could not be copied**, write it yourself in exactly the format below. The file name is `<날짜>-<HHMMSS>.quiz.md`. The first line must be `---`.
 
 ```
 ---

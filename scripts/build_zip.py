@@ -5,28 +5,42 @@ import argparse
 import zipfile
 from pathlib import Path
 
+NAME = "llm-wiki"
+INCLUDE = [".claude-plugin/plugin.json", "skills", "README.md", "LICENSE"]
+SKIP_DIRS = {"__pycache__", ".pytest_cache"}
+SKIP_SUFFIXES = {".pyc"}
+SKIP_NAMES = {".DS_Store"}
 
-def loaders(plugin_dir: Path) -> list[Path]:
-    return sorted(Path(plugin_dir).glob("claude-ai/*/SKILL.md"))
+
+def plugin_files(plugin_dir: Path) -> list[str]:
+    plugin_dir = Path(plugin_dir)
+    files = []
+    for entry in INCLUDE:
+        path = plugin_dir / entry
+        candidates = [path] if path.is_file() else sorted(p for p in path.rglob("*") if p.is_file())
+        for p in candidates:
+            rel = p.relative_to(plugin_dir)
+            if SKIP_DIRS & set(rel.parts[:-1]) or p.suffix in SKIP_SUFFIXES or p.name in SKIP_NAMES:
+                continue
+            files.append(rel.as_posix())
+    return sorted(files)
 
 
 def build(plugin_dir: Path, out_dir: Path) -> list[Path]:
+    plugin_dir = Path(plugin_dir)
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    built = []
-    for skill in loaders(plugin_dir):
-        name = skill.parent.name
-        out = out_dir / f"{name}.zip"
-        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
-            info = zipfile.ZipInfo(f"{name}/SKILL.md", date_time=(2026, 1, 1, 0, 0, 0))
+    out = out_dir / f"{NAME}.zip"
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+        for rel in plugin_files(plugin_dir):
+            info = zipfile.ZipInfo(rel, date_time=(2026, 1, 1, 0, 0, 0))
             info.external_attr = 0o644 << 16
-            z.writestr(info, skill.read_bytes(), zipfile.ZIP_DEFLATED)
-        built.append(out)
-    return built
+            z.writestr(info, (plugin_dir / rel).read_bytes(), zipfile.ZIP_DEFLATED)
+    return [out]
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description="claude.ai용 로더 skill zip 빌드 (claude-ai/<이름>/SKILL.md마다 <이름>.zip 하나)",
+    p = argparse.ArgumentParser(description="claude.ai Customize > Plugins > Upload plugin용 플러그인 zip 빌드 (dist/llm-wiki.zip)",
                                 allow_abbrev=False)
     p.add_argument("--out-dir", default=None, help="기본값: <플러그인 폴더>/dist")
     args = p.parse_args(argv)

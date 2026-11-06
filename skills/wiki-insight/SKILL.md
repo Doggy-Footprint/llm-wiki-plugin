@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Talk with the user in Korean and write page content in Korean. Korean headings and quoted phrases below are literal strings; write them exactly as given.
 
-The tool is `uv run "<skill dir>/insight.py" <subcommand> ...` (`python3` also works; it uses only the standard library). `<skill dir>` is the "Base directory" Claude Code reports when this skill loads. Output is one line of JSON; on failure it prints a message to stderr and exits with code 2. The wiki root is `--root`, then `LLM_WIKI_ROOT`, then the git top level.
+The tool is `uv run "<skill dir>/insight.py" <subcommand> ...` (`python3` also works; it uses only the standard library). `<skill dir>` is the "Base directory" Claude Code reports when this skill loads. Output is one line of JSON; on failure it prints a message to stderr and exits with code 2. The wiki root is `--root`, then `LLM_WIKI_ROOT`, then the git top level. If this is a claude.ai chat or commands cannot run, do not follow this file; follow only `claude-ai.md`.
 
 An insight page (`type: insight`) holds:
 - a title phrased as a question, not a conclusion (e.g. "아침 커피와 집중", not "커피가 집중을 높인다");

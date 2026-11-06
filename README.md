@@ -84,7 +84,7 @@ claude.ai 채팅은 위키 저장소에 접근할 수 있을 때 아래 두 경�
 
 클라우드 세션은 플러그인을 설치하지 않고 저장소의 `.claude/skills/`만 읽는다. 위키 저장소에 이 플러그인의 `skills/wiki-add/`, `skills/wiki-learn/`, `skills/wiki-quiz/`, `skills/wiki-goal/`, `skills/wiki-insight/`을 `.claude/skills/` 아래로 복사해 커밋해 두면 `/wiki-add`, `/wiki-learn`, `/wiki-quiz`, `/wiki-goal`, `/wiki-insight`가 동작한다.
 
-모든 wiki- skill은 `disable-model-invocation: true`라서 사용자가 `/wiki-…`로 부를 때만 실행되고, 에이전트에게는 보이지 않는다. claude.ai 로더는 업로드 검증이 이 키를 받지 않아 넣지 않는다.
+모든 wiki- skill은 `disable-model-invocation: true`라서 사용자가 `/wiki-…`로 부를 때만 실행되고, 에이전트에게는 보이지 않는다.
 
 - 결과를 기본 브랜치에 바로 올리려면 저장소 root에 `llm-wiki.toml`을 둔다. 없으면 세션 브랜치에 push한다.
   ```toml
@@ -96,17 +96,18 @@ claude.ai 채팅은 위키 저장소에 접근할 수 있을 때 아래 두 경�
 
 ## claude.ai 채팅 (웹·모바일)
 
-claude.ai에는 도구마다 로더 skill을 하나씩 올린다: `wiki-add`, `wiki-goal`, `wiki-insight`, `wiki-learn`, `wiki-quiz`. 로더에는 지시가 없고, 쓸 때마다 이 저장소 `main`의 `skills/<도구>/claude-ai.md`를 읽어 그대로 따른다. 그래서 지시를 고쳐도 이 저장소에 반영되면 다시 올릴 필요가 없다.
+claude.ai에도 플러그인으로 설치한다. 마켓플레이스 [`Doggy-Footprint/claude-plugins`](https://github.com/Doggy-Footprint/claude-plugins)가 이 저장소를 커밋 SHA로 고정해 가리키고, 그 저장소의 workflow가 SHA를 갱신하면 claude.ai가 자동으로 새 버전을 받는다. zip 업로드나 로더는 필요 없다.
 
-1. [Releases](https://github.com/Doggy-Footprint/llm-wiki-plugin/releases)에서 `wiki-add.zip`, `wiki-goal.zip`, `wiki-insight.zip`, `wiki-learn.zip`, `wiki-quiz.zip`을 받는다 (직접 만들려면 `python scripts/build_zip.py`, 출력은 `dist/<도구>.zip`).
-2. PC 웹 claude.ai의 Settings → Capabilities(또는 Skills)에서 zip 다섯 개를 하나씩 업로드한다. 예전에 올린 `llm-wiki` 로더는 지운다 (같은 요청에 둘 다 반응한다). 업로드한 skill은 모바일 앱에서도 쓸 수 있다.
-3. 채팅에서 "/wiki-add 주제", "/wiki-learn", "이 뉴스레터로 공부하자", "/wiki-quiz", "/wiki-goal SQLD 준비", "/wiki-insight 회의는 짧을수록 낫더라"처럼 말한다. 로더에 적힌 위키 저장소(`Doggy-Footprint/LLM-wiki`)의 `chat/deck.md`를 읽고 `chat/inbox/`에 커밋한다. wiki-goal은 `goals/` 목록만 읽고 검증한 `goals/<id>.toml`을 기본 브랜치에 바로 커밋한다. 노트 연결(`suggest`)은 채팅에서 하지 않으므로 Claude Code에서 `/wiki-goal <id> 노트 연결`로 한다. wiki-insight는 `chat/insights.md`만 읽고 `chat/inbox/`에 `.insight.md`를 커밋한다. 다른 위키 저장소를 쓰려면 프롬프트에 적거나 로더의 3절을 고친다.
-4. 결과 파일은 `chat/inbox/`에 커밋되거나, 커밋할 수 없으면 내려받게 한다. Claude Code에서 `/wiki-add import <파일>`, `/wiki-insight import <파일>`, `quiz.py sync`, `insight.py sync`로 가져온다.
+1. PC 웹 claude.ai의 Customize → Plugins → Add → Add marketplace에 `Doggy-Footprint/claude-plugins`를 넣고, **Sync automatically**를 켠다.
+2. 목록에서 `llm-wiki`를 설치한다. 예전에 Customize → Skills에 올린 `wiki-add`, `wiki-goal`, `wiki-insight`, `wiki-learn`, `wiki-quiz` 로더는 지운다 (같은 요청에 둘 다 반응한다). 설치한 플러그인은 모바일 앱과 Claude Code(`llm-wiki@synced`)에도 들어온다.
+3. 설정에서 코드 실행을 켠다. 채팅에서 `/`를 눌러 `wiki-add`, `wiki-learn`, `wiki-quiz`, `wiki-goal`, `wiki-insight`를 고른다. skill이 모두 `disable-model-invocation: true`라서 Claude가 알아서 부르지 않는다.
+4. 각 skill의 `SKILL.md`는 claude.ai 채팅이면 같은 폴더의 `claude-ai.md`만 따르게 한다. 위키 저장소는 프롬프트에 적은 저장소, 없으면 `Doggy-Footprint/LLM-wiki`(기본 브랜치 `master`)다. 그 저장소의 `chat/deck.md`(wiki-learn, wiki-quiz)나 `chat/insights.md`(wiki-insight)를 읽고 `chat/inbox/`에 커밋한다. wiki-goal은 `goals/` 목록만 읽고 검증한 `goals/<id>.toml`을 기본 브랜치에 바로 커밋한다. 노트 연결(`suggest`)은 채팅에서 하지 않으므로 Claude Code에서 `/wiki-goal <id> 노트 연결`로 한다.
+5. 결과 파일은 `chat/inbox/`에 커밋되거나, 커밋할 수 없으면 내려받게 한다. Claude Code에서 `/wiki-add import <파일>`, `/wiki-insight import <파일>`, `quiz.py sync`, `insight.py sync`로 가져온다.
 
-- 지시 파일은 GitHub 연결로 읽고, 안 되면 `raw.githubusercontent.com`에서 읽는다. 둘 다 안 되면 멈춘다.
-- 코드 실행이 켜져 있으면 로더가 그 도구의 스크립트(`learn.py`, `quiz.py`, `goal.py`와 `index.py`, `insight.py`)를 `raw.githubusercontent.com`에서 내려받아 결과 파일을 만든다. 코드 실행이 꺼져 있거나 네트워크가 막혀 내려받지 못하면 같은 형식의 텍스트를 직접 쓴다.
-- 새 도구를 추가할 때: `skills/<도구>/claude-ai.md`와 로더 `claude-ai/<도구>/SKILL.md`를 쓴다. 테스트가 두 목록이 맞는지 확인한다. 새 도구의 zip은 한 번 올려야 한다.
-- 로더(`claude-ai/<도구>/SKILL.md`)나 그 description을 바꿨을 때만 그 도구의 zip을 다시 올린다.
+- claude.ai는 skill 폴더를 코드 실행 환경에 복사한다. 코드 실행이 켜져 있으면 `claude-ai.md`가 같은 폴더의 스크립트(`learn.py`, `quiz.py`, `goal.py`와 `index.py`, `insight.py`)를 `/tmp/llm-wiki`에 복사해 결과 파일을 만든다. 복사하지 못하면 같은 형식의 텍스트를 직접 쓴다.
+- wiki-learn은 wiki-add의 `claude-ai.md`, `SKILL.md`, `learn.py`를 쓴다. 옆 폴더에 없으면 실행 환경에서 찾고, 그래도 없으면 멈춘다.
+- 새 도구를 추가할 때: `skills/<도구>/claude-ai.md`를 쓰고, `SKILL.md`에 claude.ai 채팅이면 그 파일만 따르라는 문장을 넣는다. 테스트가 둘 다 확인한다.
+- 마켓플레이스를 쓸 수 없으면 Release의 `llm-wiki.zip`을 Customize → Plugins → Add → Upload plugin으로 올린다. 이 경우는 자동으로 갱신되지 않는다.
 
 ## 개발
 
@@ -116,7 +117,7 @@ PYTHONPATH=skills/wiki-add:skills/wiki-quiz:skills/wiki-goal:skills/wiki-insight
   python -m pytest tests --cov=learn --cov=quiz --cov=build_zip --cov=goal --cov=index --cov=insight --cov-branch --cov-fail-under=90
 ```
 
-main에 push하면 GitHub Actions가 테스트를 돌리고, `plugin.json`의 `version`에 해당하는 `v<version>` 태그가 없을 때만 로더 zip(`wiki-add.zip`, `wiki-goal.zip`, `wiki-insight.zip`, `wiki-learn.zip`, `wiki-quiz.zip`)을 Release로 올린다. claude.ai는 지시를 `main`에서 바로 읽으므로 지시만 바뀐 변경은 버전을 올리지 않아도 반영된다.
+main에 push하면 GitHub Actions가 테스트를 돌리고, `plugin.json`의 `version`에 해당하는 `v<version>` 태그가 없을 때만 플러그인 zip(`llm-wiki.zip`, `python scripts/build_zip.py`로 만든다)을 Release로 올린다. Claude Code는 `version`이 바뀌어야 새 버전으로 인식하므로 배포할 때마다 올린다. claude.ai는 마켓플레이스가 고정한 커밋을 받는다.
 
 ## 라이선스
 

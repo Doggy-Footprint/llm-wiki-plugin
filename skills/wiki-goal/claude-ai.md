@@ -1,12 +1,12 @@
 # Setting learning goals in claude.ai chat
 
-This is the procedure for claude.ai chat. The wiki lives in a GitHub repository; this chat reads only the `goals/` folder there and commits the goal map `goals/<id>.toml` directly. Follow sections (a), (c), and (d) of `skills/wiki-goal/SKILL.md` in the same repository for the decision criteria; the format example is `skills/wiki-goal/example.toml`. Do not follow that file's tool runs (`list`, `suggest`, etc.) or its sections (f) and (g).
+This is the procedure for claude.ai chat. The wiki lives in a GitHub repository; this chat reads only the `goals/` folder there and commits the goal map `goals/<id>.toml` directly. Follow sections (a), (c), and (d) of `skills/wiki-goal/SKILL.md` in this plugin for the decision criteria; the format example is `skills/wiki-goal/example.toml`. Do not follow that file's tool runs (`list`, `suggest`, etc.) or its sections (f) and (g). A `skills/<name>/...` path in this file is a file of this plugin's `<name>` skill; this skill's own files are next to this file, in `<this folder>`.
 
 Talk with the user in Korean. Quoted messages below are said to the user as written.
 
 ## 0. Repository
 
-Use the repository named in the user's prompt; if none, the one named in the loader skill. Ask which repository first only when neither names one.
+Use the repository named in the user's prompt; if none, the GitHub repository `Doggy-Footprint/LLM-wiki` (default branch `master`).
 
 ## 1. Hear the goal and check existing goals
 
@@ -19,7 +19,7 @@ Decide and draft as in sections (c) and (d) of `skills/wiki-goal/SKILL.md`. Veri
 
 ## 3. Validate
 
-**If code execution is on**, write the confirmed map to `<script dir>/root/goals/<id>.toml` and check it. `<script dir>` is the folder where the loader skill downloaded the scripts.
+**If code execution is on**, write the confirmed map to `<script dir>/root/goals/<id>.toml` and check it. `<script dir>` is `/tmp/llm-wiki`. Before the first run, copy the scripts there once: `mkdir -p /tmp/llm-wiki && cp "<this folder>/goal.py" "<this folder>/index.py" /tmp/llm-wiki/`.
 
 ```
 python3 "<script dir>/goal.py" --root "<script dir>/root" check <id>
@@ -27,7 +27,7 @@ python3 "<script dir>/goal.py" --root "<script dir>/root" check <id>
 
 On exit code 2, fix what the stderr message says and check again. When it passes, also run `start <id>` to get the first concepts to study (`items`). This result does not reflect the wiki's existing notes (it treats every concept as not yet studied).
 
-**If code execution is off or the scripts could not be downloaded**, check these rules yourself.
+**If code execution is off or the scripts could not be copied**, check these rules yourself.
 - `id` equals the file name, every id matches `^[a-z0-9]+(-[a-z0-9]+)*$`, and ids are unique among areas and among concepts.
 - `title` is a non-empty string, and `[source]` is a table.
 - `kind` is `official` or `subjective`. Every area and concept has a non-empty `name`. Each area's `weight` is a number greater than 0, and each area has at least one concept.
