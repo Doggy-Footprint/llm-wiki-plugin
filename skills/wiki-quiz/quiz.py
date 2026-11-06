@@ -220,9 +220,9 @@ def _placeholder(line: str) -> bool:
     return s.startswith("(") and s.endswith(")")
 
 
-def _link_targets(lines: list[str], cap: int | None = None) -> list[str]:
+def _link_targets(lines: list[str], cap: int | None = None, headings: tuple[str, ...] = ("## 연결",)) -> list[str]:
     out: list[str] = []
-    for line in _section(lines, "## 연결"):
+    for line in (l for h in headings for l in _section(lines, h)):
         for m in _LINK_RE.findall(line):
             t = m.split("|", 1)[0].split("#", 1)[0].strip()
             if t and t != LINK_PLACEHOLDER_TARGET and t not in out:
@@ -257,7 +257,7 @@ def _frontier(pages: list[_Page], stems: set[str], limit: int) -> list[dict]:
         raise QuizError(f"limit은 1~{FRONTIER_MAX}: {limit!r}")
     found: dict[str, list[_Page]] = {}
     for p in pages:
-        for t in _link_targets(p.lines):
+        for t in _link_targets(p.lines, headings=("## 연결", "## 다음 학습")):
             if t not in stems:
                 found.setdefault(t, []).append(p)
     items = []

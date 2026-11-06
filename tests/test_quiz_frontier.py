@@ -149,3 +149,19 @@ def test_O6_non_utf8_page_contributes_no_links(tmp_path):
     (root / "wiki" / "s" / "Bad.md").write_bytes(
         b"---\ntype: concept\n---\n# Bad\n\n## \xec\x97\xb0\xea\xb2\xb0\n- [[Ghost]]\n\xff\xfe\n")
     assert [g["title"] for g in quiz.frontier(root)] == ["Real"]
+
+
+def test_next_study_section_links_count_as_frontier(tmp_path):
+    root = tmp_path / "r"
+    page(root, "wiki/s/A.md", level=2, sections=[("연결", "- [[X]] — r"), ("다음 학습", "- [[N]] — 덜 이해함: r\n- [[X]] — 이어서: r")])
+    page(root, "wiki/s/B.md", level=1, sections=[("다음 학습", "- [[N]] — 이어서: r")])
+    assert quiz.frontier(root) == [
+        {"title": "N", "from": ["A", "B"], "max_level": 2},
+        {"title": "X", "from": ["A"], "max_level": 2},
+    ]
+
+
+def test_card_links_still_only_from_connection_section(tmp_path):
+    root = tmp_path / "r"
+    page(root, "wiki/s/A.md", sections=[("연결", "- [[X]] — r"), ("다음 학습", "- [[N]] — 이어서: r")])
+    assert quiz.card(root, "wiki/s/A.md")["links"] == ["X"]

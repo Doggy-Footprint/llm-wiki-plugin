@@ -144,12 +144,12 @@ def import_file(tmp_path, name="r.learn.md", text=None):
 
 def test_O17_I1_new_page_from_result(tmp_path):
     root = make_root(tmp_path)
-    _, p = made(tmp_path)
+    _, p = made(tmp_path, next_items=["[[다음A]] — 덜 이해함: 이유A"])
     res = learn.import_result(p, root)
     assert res["page"] == "wiki/study/신경망 기초.md"
     assert res["created"] is True and res["changed"] is True
     assert res["level"] == 2 and res["previous_level"] is None
-    assert names(res["sections_added"]) == {"내가 정리한 것", "보충 (LLM)", "연결"}
+    assert names(res["sections_added"]) == {"내가 정리한 것", "보충 (LLM)", "연결", "다음 학습"}
     page = (root / res["page"]).read_text(encoding="utf-8")
     meta = fm_parse(page)
     assert (meta["level"], meta["created"], meta["updated"]) == ("2", DS, DS)
@@ -159,6 +159,7 @@ def test_O17_I1_new_page_from_result(tmp_path):
     assert section_lines(page, "내가 정리한 것") == ["내 정리 1", "내 정리 2"]
     assert section_lines(page, "보충 (LLM)") == ["보충 1"]
     assert section_lines(page, "연결") == ["- [[링크A]] — 관계A", "- [[링크B]] — 관계B"]
+    assert section_lines(page, "다음 학습") == ["- [[다음A]] — 덜 이해함: 이유A"]
     assert PLACEHOLDER_LINK not in page
     for ln in page.splitlines():
         assert not (ln.startswith("(") and ln.endswith(")")), ln
@@ -319,3 +320,58 @@ def test_O17_I11_frontmatter_values_one_line(tmp_path):
     assert meta["summary"] == "첫째 줄 둘째 줄 셋째"
     assert meta["misconception"] == "오해 가 오해 나"
     assert meta["evidence"] == "e1 e2"
+
+
+NEXT = ["[[다음A]] — 덜 이해함: 이유A", "[[다음B]] — 이어서: 이유B"]
+
+
+def test_next_section_in_result_file_after_links(tmp_path):
+    _, p = made(tmp_path, next_items=NEXT)
+    text = p.read_text(encoding="utf-8")
+    i = [text.index(f"## {h}") for h in ("내가 정리한 것", "보충 (LLM)", "연결", "다음 학습")]
+    assert i == sorted(i)
+    assert section_lines(text, "다음 학습") == [f"- {n}" for n in NEXT]
+
+
+def test_next_section_empty_in_result_file(tmp_path):
+    _, p = made(tmp_path)
+    text = p.read_text(encoding="utf-8")
+    assert "## 다음 학습" in text and section_lines(text, "다음 학습") == []
+
+
+def test_next_section_created_between_links_and_sources_on_old_page(tmp_path):
+    root = make_root(tmp_path)
+    write(root / "wiki/study/Imported.md", EXISTING)
+    body = "## 다음 학습\n- [[다음A]] — 덜 이해함: 이유A\n"
+    res = learn.import_result(import_file(tmp_path, text=result_text(body=body)), root)
+    assert names(res["sections_added"]) == {"다음 학습"}
+    page = (root / res["page"]).read_text(encoding="utf-8")
+    heads = [ln for ln in page.splitlines() if ln.startswith("## ")]
+    assert heads[-3:] == ["## 연결", "## 다음 학습", "## 출처"]
+    assert section_lines(page, "다음 학습") == ["- [[다음A]] — 덜 이해함: 이유A"]
+    assert section_lines(page, "연결") == ["- [[기존]] — 관계"]
+
+
+def test_next_lines_deduplicated_and_appended_without_blank(tmp_path):
+    root = make_root(tmp_path)
+    write(root / "wiki/study/Imported.md", EXISTING)
+    first = "## 다음 학습\n- [[다음A]] — 덜 이해함: 이유A\n"
+    learn.import_result(import_file(tmp_path, "a.learn.md", result_text(body=first)), root)
+    second = "## 다음 학습\n- [[다음A]] — 덜 이해함: 이유A\n- [[다음B]] — 이어서: 이유B\n"
+    res = learn.import_result(import_file(tmp_path, "b.learn.md", result_text(body=second)), root)
+    assert names(res["sections_added"]) == {"다음 학습"}
+    page = (root / res["page"]).read_text(encoding="utf-8")
+    assert section_lines(page, "다음 학습") == [f"- {n}" for n in NEXT]
+    res = learn.import_result(import_file(tmp_path, "c.learn.md", result_text(body=second)), root)
+    assert res["sections_added"] == []
+
+
+def test_links_section_created_before_existing_next_section(tmp_path):
+    root = make_root(tmp_path)
+    page_text = EXISTING.replace("## 연결\n- [[기존]] — 관계\n\n", "## 다음 학습\n- [[다음A]] — 이어서: x\n\n")
+    write(root / "wiki/study/Imported.md", page_text)
+    res = learn.import_result(import_file(tmp_path, text=result_text(body="## 연결\n- [[링크A]] — 관계A\n")), root)
+    page = (root / res["page"]).read_text(encoding="utf-8")
+    heads = [ln for ln in page.splitlines() if ln.startswith("## ")]
+    assert heads[-3:] == ["## 연결", "## 다음 학습", "## 출처"]
+    assert section_lines(page, "연결") == ["- [[링크A]] — 관계A"]

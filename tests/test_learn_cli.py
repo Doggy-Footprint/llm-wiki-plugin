@@ -197,3 +197,16 @@ def test_O10_date_today_and_yesterday(tmp_path, capsys):
         got = datetime.date.fromisoformat(m.group(1))
         assert 0 <= (today - got).days <= (1 if word == "today" else 2)
         assert (today - got).days >= (0 if word == "today" else 1)
+
+
+def test_result_next_flag_writes_next_section(tmp_path, capsys):
+    root = make_root(tmp_path)
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+    rc, out, _ = cli(capsys, tmp_path, root, [
+        "result", "개념", "--level", "1", "--summary", "요약", "--evidence", "근거", "--out", str(out_dir),
+        "--next", "[[A]] — 덜 이해함: a", "--next", "[[B]] — 이어서: b", "--date", DS,
+    ])
+    assert rc == 0
+    text = Path(one_json(out)["path"]).read_text(encoding="utf-8")
+    assert section_lines(text, "다음 학습") == ["- [[A]] — 덜 이해함: a", "- [[B]] — 이어서: b"]
