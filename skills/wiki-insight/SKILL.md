@@ -1,6 +1,7 @@
 ---
 name: wiki-insight
 description: Record a realization about life patterns, ways of working, or career as an insight page titled as a question. Find an existing page on the same question, ask whether the thinking changed, then create the page or append the change to it. Use for requests like "/wiki-insight", "/wiki-insight followed by a realization", "keep this as an insight", or "/wiki-insight import result file" (importing a result file made in claude.ai chat).
+disable-model-invocation: true
 ---
 
 # wiki-insight: keep a realization as a question-titled insight page

@@ -1,6 +1,7 @@
 ---
 name: wiki-goal
 description: Set learning goals as goal maps (TOML files under goals/) with weighted areas, concepts, and prerequisites. Decide whether the stated goals become one map, several maps, or an addition to an existing map, then validate with goal.py, link existing wiki notes, and show where to start. Use for requests like "/wiki-goal", "set a study goal", "I want to prepare for an exam", "make a learning goal", or "plan what to study for X".
+disable-model-invocation: true
 ---
 
 # wiki-goal: turn learning goals into goal maps
