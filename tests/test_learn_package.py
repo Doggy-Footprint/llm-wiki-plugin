@@ -67,9 +67,10 @@ def test_skill_description_has_no_angle_brackets(path):
 
 
 @pytest.mark.parametrize("name", NAMES)
-def test_skill_frontmatter_is_only_name_and_description(name):
+def test_skill_runs_only_when_the_user_invokes_it(name):
     fm = frontmatter((PLUGIN_ROOT / "skills" / name / "SKILL.md").read_text(encoding="utf-8"))
-    assert set(fm) == {"name", "description"}, "claude.ai가 다른 키(disable-model-invocation 등)가 있는 플러그인을 설치하지 않았다"
+    assert set(fm) == {"name", "description", "disable-model-invocation"}
+    assert fm["disable-model-invocation"] == "true"
 
 
 def test_chat_instruction_folders_match_skills():
@@ -198,7 +199,7 @@ def test_O16_Y2_plugin_concept_equals_template():
 def test_O16_Y3_plugin_json_fields():
     data = json.loads((PLUGIN_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
     assert data["name"] == "llm-wiki"
-    assert data["version"] == "0.9.1"
+    assert data["version"] == "0.9.2"
     assert data["license"] == "MIT"
     assert "Doggy-Footprint" in json.dumps(data["author"])
     assert data["repository"] == "https://github.com/Doggy-Footprint/llm-wiki-plugin"
@@ -230,7 +231,7 @@ def test_O16_Y6_pep723_block_in_header():
 
 def test_O12_plugin_json_version_and_description():
     data = json.loads((PLUGIN_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
-    assert data["version"] == "0.9.1"
+    assert data["version"] == "0.9.2"
     desc = data["description"].lower()
     for name in NAMES:
         assert re.search(rf"(?<![\w-]){re.escape(name)}(?![\w-])", desc), name

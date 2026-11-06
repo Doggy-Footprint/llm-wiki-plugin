@@ -1,6 +1,7 @@
 ---
 name: wiki-quiz
 description: Quiz the user on their wiki. Review mode asks about concept pages that are due under spaced repetition and records the graded answers; explore mode asks a pretest question about a missing or random concept and offers wiki-learn; cram mode practices without recording. Use for requests like "/wiki-quiz", "quiz me", "review what I studied", "quiz me on something new", or "explore a random concept".
+disable-model-invocation: true
 ---
 
 # wiki-quiz: review quizzes and new-concept exploration
