@@ -1225,3 +1225,120 @@ def test_cli_without_root_uses_git_top(tmp_path, capsys):
     code, out, _ = run_cli(index, ["build"], capsys, environ={}, cwd=root / "wiki")
     assert code == 0
     assert json.loads(out)["pages"] == len(FIXTURE_PAGES)
+
+
+FAKE_COMMAND = r'''
+import json, sys
+req = json.load(sys.stdin)
+mode = sys.argv[1] if len(sys.argv) > 1 else "ok"
+with open("calls.jsonl", "a", encoding="utf-8") as f:
+    f.write(json.dumps({"model": req["model"], "dim": req["dim"], "n": len(req["texts"])}) + "\n")
+if mode == "fail":
+    print("first line", file=sys.stderr)
+    print("model not in cache", file=sys.stderr)
+    sys.exit(3)
+if mode == "garbage":
+    print("not json")
+    sys.exit(0)
+if mode == "noncontainer":
+    print(json.dumps({"vectors": 5}))
+    sys.exit(0)
+dim = req["dim"]
+vec = lambda t: ([1.0] + [0.0] * (dim - 1)) if "조인" in t else ([0.0] * (dim - 1) + [1.0])
+print(json.dumps({"vectors": [vec(t) for t in req["texts"]]}))
+'''
+
+
+def _command_root(tmp_path, mode="ok", argv0=None):
+    root = make_root(tmp_path)
+    (root / "fake_embed.py").write_text(FAKE_COMMAND, encoding="utf-8")
+    exe = argv0 or sys.executable
+    args = ", ".join(json.dumps(a) for a in [exe, "fake_embed.py", mode])
+    (root / "config.toml").write_text(f'[embedding]\nmodel = "local-m"\ndim = 4\ncommand = [{args}]\n',
+                                      encoding="utf-8")
+    return root
+
+
+def _calls(root):
+    path = root / "calls.jsonl"
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()] if path.exists() else []
+
+
+def test_cli_embed_with_command_needs_no_key(tmp_path, monkeypatch, capsys):
+    root = _command_root(tmp_path)
+    fake = _openai(monkeypatch)
+    code, out, err = run_cli(index, ["--root", root, "embed"], capsys, environ={})
+    assert code == 0, err
+    assert fake.requests == []
+    result = json.loads(out)
+    assert (result["model"], result["dim"]) == ("local-m", 4)
+    assert result["embedded"] == len(vector_rows(root)) > 0
+    assert {(r[1], r[2]) for r in vector_rows(root)} == {("local-m", 4)}
+    assert {(c["model"], c["dim"]) for c in _calls(root)} == {("local-m", 4)}
+
+
+def test_cli_search_with_command_is_hybrid(tmp_path, monkeypatch, capsys):
+    root = _command_root(tmp_path)
+    _openai(monkeypatch)
+    assert run_cli(index, ["--root", root, "embed"], capsys, environ={})[0] == 0
+    code, out, err = run_cli(index, ["--root", root, "search", "조인"], capsys, environ={})
+    assert code == 0, err
+    result = json.loads(out)
+    assert result["mode"] == "hybrid"
+    assert result["warnings"] == []
+    assert any(r["vector_rank"] == 1 for r in result["results"])
+
+
+@pytest.mark.parametrize("mode,message", [
+    pytest.param("fail", "embed command exit 3: model not in cache", id="nonzero-exit-last-stderr-line"),
+    pytest.param("garbage", "embed command output malformed", id="not-json"),
+    pytest.param("noncontainer", "embed command output malformed", id="vectors-not-list"),
+])
+def test_cli_embed_command_errors_fail_and_log(tmp_path, monkeypatch, capsys, mode, message):
+    root = _command_root(tmp_path, mode)
+    code, out, err = run_cli(index, ["--root", root, "embed"], capsys, environ={})
+    assert code == 2
+    assert out == ""
+    assert message in err
+    assert vector_rows(root) == []
+    assert message in read_jsonl(root, "embed-log.jsonl")[-1]["error"]
+
+
+def test_cli_embed_command_missing_executable(tmp_path, capsys):
+    root = _command_root(tmp_path, argv0="no-such-dir/python")
+    code, _, err = run_cli(index, ["--root", root, "embed"], capsys, environ={})
+    assert code == 2
+    assert "embed command failed to start: FileNotFoundError" in err
+
+
+def test_command_relative_executable_resolves_against_root(tmp_path):
+    root = make_root(tmp_path)
+    (root / "config.toml").write_text('[embedding]\ncommand = [".venv/bin/python", "x.py"]\n', encoding="utf-8")
+    emb, notes = index.resolve_embedder(root, None, {})
+    assert isinstance(emb, index.CommandEmbedder) and notes == []
+    assert emb._argv == [str(root / ".venv/bin/python"), "x.py"]
+    assert emb._cwd == root
+
+
+def test_command_bare_executable_left_for_path_lookup(tmp_path):
+    root = make_root(tmp_path)
+    (root / "config.toml").write_text('[embedding]\ncommand = ["python3", "x.py"]\n', encoding="utf-8")
+    emb, _ = index.resolve_embedder(root, None, {})
+    assert emb._argv == ["python3", "x.py"]
+
+
+@pytest.mark.parametrize("value", ['"python3 x.py"', "[]", '["python3", 1]', '[""]'])
+def test_command_must_be_nonempty_string_list(tmp_path, value):
+    (tmp_path / "config.toml").write_text(f"[embedding]\ncommand = {value}\n", encoding="utf-8")
+    with pytest.raises(index.IndexToolError, match="command must be a non-empty list of strings"):
+        index.resolve_embedder(tmp_path, None, {"OPENAI_API_KEY": "sk-x"})
+
+
+def test_command_timeout(tmp_path, monkeypatch):
+    def boom(*a, **kw):
+        raise subprocess.TimeoutExpired(cmd="x", timeout=index.COMMAND_TIMEOUT)
+
+    monkeypatch.setattr(index.subprocess, "run", boom)
+    emb = index.CommandEmbedder("m", 4, ["x"], tmp_path)
+    with pytest.raises(index.IndexToolError, match="timed out"):
+        emb.embed(["a"])
