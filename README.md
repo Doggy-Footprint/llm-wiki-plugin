@@ -23,6 +23,7 @@
 - 위키가 없는 폴더에서는 만들어도 되는지 묻고 `wiki/`, `raw/`를 만든다. 위키 위치는 `--root`, 환경 변수 `LLM_WIKI_ROOT`, git 최상위 순으로 정한다.
 - 원본은 `raw/YYYY/MM/`에 복사하고 변환본(`.md`)과 `raw/MANIFEST.csv`를 남긴다. 같은 자료를 다시 주면 새로 만들지 않는다.
 - 페이지는 `wiki/study/<제목>.md`에 만든다. 대화 전문은 저장하지 않는다.
+- 페이지의 `## 다음 학습`에는 공부 중에 나왔지만 덜 이해한 개념과 이어서 볼 개념을 `- [[개념]] — 덜 이해함: 이유` / `- [[개념]] — 이어서: 이유`로 남긴다. 아직 페이지가 없는 항목은 `wiki-quiz explore`의 후보가 된다.
 - 이 저장소의 템플릿을 쓰려면 위키 root에 `templates/concept.md`를 둔다. 없으면 내장 템플릿을 쓴다.
 
 ## wiki-learn: 뉴스레터·퀴즈에서 개념 공부
@@ -38,7 +39,7 @@
 
 ```
 /llm-wiki:wiki-quiz                  # review: 복습 시점이 된 개념 5개
-/llm-wiki:wiki-quiz explore          # 위키가 링크만 걸어 둔 개념 중에서
+/llm-wiki:wiki-quiz explore          # 위키가 링크만 걸어 둔 개념(연결, 다음 학습) 중에서
 /llm-wiki:wiki-quiz explore random   # 위키에 없는 개념 아무거나
 /llm-wiki:wiki-quiz cram             # 기록하지 않는 연습
 ```

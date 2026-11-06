@@ -26,7 +26,8 @@ ROLLOVER_HOUR = 5
 MANIFEST_FIELDS = ["raw_path", "original_name", "sha256", "archived_at", "extracted_to"]
 STUDY_HEADING = "## 공부 (study/)"
 CLOUD_PUSH_VALUES = ("default-branch", "session-branch")
-RESULT_SECTIONS = ("내가 정리한 것", "보충 (LLM)", "연결")
+RESULT_SECTIONS = ("내가 정리한 것", "보충 (LLM)", "연결", "다음 학습")
+LIST_SECTIONS = ("연결", "다음 학습")
 LINK_PLACEHOLDER = "- [[관련 개념]] — 어떤 관계인지"
 
 INDEX_TEXT = (
@@ -719,7 +720,7 @@ def record(title: str, level: int, evidence: str, root: Path, date: datetime.dat
 
 def make_result(title: str, level: int, date: datetime.date, summary: str, evidence: str,
                 out_dir: Path, misconception: str | None = None, mine: str = "",
-                supplement: str = "", links: Sequence[str] = ()) -> dict:
+                supplement: str = "", links: Sequence[str] = (), next_items: Sequence[str] = ()) -> dict:
     out_dir = Path(out_dir)
     _check_title(title)
     _check_level(level)
@@ -737,6 +738,7 @@ def make_result(title: str, level: int, date: datetime.date, summary: str, evide
         ("## 내가 정리한 것", mine.strip().split("\n") if mine.strip() else []),
         ("## 보충 (LLM)", supplement.strip().split("\n") if supplement.strip() else []),
         ("## 연결", [f"- {l}" for l in links]),
+        ("## 다음 학습", [f"- {n}" for n in next_items]),
     ):
         parts += ["", heading, *content]
     base = f"{date.isoformat()}-{_slugify(title)}"
@@ -808,9 +810,10 @@ def import_result(path: Path, root: Path) -> dict:
                         meta.get("misconception") or None, ())
     lines, nl, is_new = plan["lines"], plan["nl"], plan["is_new"]
     anchors = {
-        "내가 정리한 것": ["## 보충 (LLM)", "## 이해 기록", "## 오해와 교정", "## 연결", "## 출처"],
-        "보충 (LLM)": ["## 이해 기록", "## 오해와 교정", "## 연결", "## 출처"],
-        "연결": ["## 출처"],
+        "내가 정리한 것": ["## 보충 (LLM)", "## 이해 기록", "## 오해와 교정", "## 연결", "## 다음 학습", "## 출처"],
+        "보충 (LLM)": ["## 이해 기록", "## 오해와 교정", "## 연결", "## 다음 학습", "## 출처"],
+        "연결": ["## 다음 학습", "## 출처"],
+        "다음 학습": ["## 출처"],
     }
     added = []
     for name in RESULT_SECTIONS:
@@ -819,7 +822,7 @@ def import_result(path: Path, root: Path) -> dict:
             continue
         heading = f"## {name}"
         have = _section_bodies(lines, heading)
-        if name == "연결":
+        if name in LIST_SECTIONS:
             have_set = {h.strip() for h in have}
             block = [l for l in block if l.strip() not in have_set]
             if not block:
@@ -834,7 +837,7 @@ def import_result(path: Path, root: Path) -> dict:
                 new[-1] = block[-1]
             lines[ph : ph + 1] = new
         else:
-            _append_to_section(lines, heading, block, [], nl, blank_before=name != "연결")
+            _append_to_section(lines, heading, block, [], nl, blank_before=name not in LIST_SECTIONS)
         added.append(name)
     out = _commit_record(plan)
     out["sections_added"] = added
@@ -881,6 +884,7 @@ def _parser() -> argparse.ArgumentParser:
     s.add_argument("--mine", default="")
     s.add_argument("--supplement", default="")
     s.add_argument("--link", action="append", dest="links", default=[])
+    s.add_argument("--next", action="append", dest="next_items", default=[])
     s.add_argument("--date", type=_date_arg, default=None)
     s = sub.add_parser("import", parents=[common])
     s.add_argument("file")
@@ -919,7 +923,8 @@ def main(argv: list[str] | None = None, environ: Mapping[str, str] | None = None
                          args.misconception, args.sources)
         elif args.cmd == "result":
             out = make_result(args.title, args.level, today(), args.summary, args.evidence, at(args.out),
-                              args.misconception, args.mine, args.supplement, args.links)
+                              args.misconception, args.mine, args.supplement, args.links,
+                              args.next_items)
         else:
             out = import_result(at(args.file), root)
     except LearnError as e:

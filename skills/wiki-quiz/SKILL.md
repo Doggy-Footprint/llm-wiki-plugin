@@ -37,7 +37,7 @@ description: Quiz the user on their wiki. Review mode asks about concept pages t
 
 ## 2. explore
 
-1. 기본은 `frontier`를 실행해 위키가 링크만 걸고 아직 페이지가 없는 개념 중 하나를 고른다. 어느 것이 좋은지 사용자가 정하게 해도 된다.
+1. 기본은 `frontier`를 실행해 위키가 `## 연결`이나 `## 다음 학습`에 링크만 걸고 아직 페이지가 없는 개념 중 하나를 고른다. 어느 것이 좋은지 사용자가 정하게 해도 된다.
 2. 사용자가 **랜덤**이라고 말했을 때만 무작위로 고른다. 이때는 `## Known` 목록(`chat/deck.md`)이나 `wiki/index.md`에 없는 개념을 아무거나 고른다.
 3. **사전 질문 하나**를 낸다. 답을 받으면 짧게 설명한다.
 4. `/wiki-learn`으로 이어서 공부할지 권한다. explore는 기록하지 않는다 (`record`도 `data/reviews.csv`도 쓰지 않는다).
