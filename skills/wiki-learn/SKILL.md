@@ -1,7 +1,6 @@
 ---
 name: wiki-learn
 description: Learn concepts from a newsletter, article, or quiz question. List the concepts in the text, mark which ones the wiki already knows, pick one, then run the wiki-add skill's diagnose and teach flow plus a final test with new questions, and record the result on the wiki concept page. Use for requests like "/wiki-learn", "learn from this newsletter", "study the concepts in this text", or "test me on this quiz question".
-disable-model-invocation: true
 ---
 
 # wiki-learn: pick a concept from a newsletter or quiz, study it, and record it
