@@ -33,7 +33,7 @@ BATCH = 64
 TOP = 50
 RRF_K = 60
 SKIP_PAGES = {"wiki/index.md", "wiki/log.md"}
-# insight(주관적 기록) 페이지는 외부 임베딩 API로 보내지 않는다. 키워드 검색으로만 찾는다.
+# insight(주관적 기록) 페이지는 외부 임베딩 API로 보내지 않는다.
 NO_EMBED_TYPES = {"insight"}
 TOKEN_RE = re.compile(r"[0-9a-z_]+|[가-힣]+")
 HANGUL_RE = re.compile(r"[가-힣]+")
