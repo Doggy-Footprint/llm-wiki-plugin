@@ -3,55 +3,58 @@ name: wiki-quiz
 description: Quiz the user on their wiki. Review mode asks about concept pages that are due under spaced repetition and records the graded answers; explore mode asks a pretest question about a missing or random concept and offers wiki-learn; cram mode practices without recording. Use for requests like "/wiki-quiz", "quiz me", "review what I studied", "quiz me on something new", or "explore a random concept".
 ---
 
-# wiki-quiz: 복습 퀴즈와 새 개념 탐색
+# wiki-quiz: review quizzes and new-concept exploration
 
-도구는 `uv run "<skill 폴더>/quiz.py" --root <root> <하위명령> ...`이다 (`<skill 폴더>`는 이 skill이 로드될 때 Claude Code가 알려 주는 "Base directory"). 출력은 JSON 한 줄이고 실패하면 stderr 메시지와 종료 코드 2를 준다. `root`는 `uv run "<skill 폴더>/../wiki-add/learn.py" env`의 `root`를 쓴다 (add skill이 없으면 git 최상위). `mode`가 `chat`이거나 claude.ai 채팅이면 이 파일을 따르지 말고 `claude-ai.md`만 따른다.
+The tool is `uv run "<skill dir>/quiz.py" --root <root> <subcommand> ...` (`<skill dir>` is the "Base directory" Claude Code reports when this skill loads). Output is one line of JSON; on failure it prints a message to stderr and exits with code 2. For `root`, use the `root` from `uv run "<skill dir>/../wiki-add/learn.py" env` (the git top level if the add skill is absent). If `mode` is `chat` or this is a claude.ai chat, do not follow this file; follow only `claude-ai.md`.
 
-토큰 비용을 지킨다. 페이지를 **열지 않는다**. 질문에 필요한 내용은 `card`가 주는 요약·내가 정리한 것·오해·연결뿐이다. 복습 일정은 `data/reviews.csv`가 정하고 페이지에는 아무것도 쓰지 않는다.
+Talk with the user in Korean.
 
-## 0. 시작
+Keep token cost down. **Do not open** pages. The only content a question may use is the summary, 내가 정리한 것, misconceptions, and links that `card` returns. `data/reviews.csv` decides the review schedule. Reviewing and grading write nothing to pages; only `sync` imports `.learn.md` results into pages.
 
-먼저 `quiz.py --root <root> sync`를 실행한다. claude.ai 채팅이 `chat/inbox/`에 올린 결과 파일을 `data/reviews.csv`로 가져온다. 출력의 `failed`가 비어 있지 않으면 사유를 알린다 (종료 코드 1). 계속 진행해도 된다.
+## 0. Start
 
-모드는 사용자가 말한 대로 정한다. 말이 없으면 `review`.
+First run `quiz.py --root <root> sync`. It imports the result files that claude.ai chat uploaded to `chat/inbox/`: `.quiz.md` files go into `data/reviews.csv`, `.learn.md` files are imported into wiki pages through `wiki-add`'s `learn.py` (the `learn` list in the output holds those pages), imported files are deleted from `chat/inbox/`, and `chat/deck.md` is rebuilt. If `failed` in the output is non-empty (exit code 1), tell the user the reasons. It is fine to continue.
 
-## 1. review (기본)
+Pick the mode from what the user said. If they said nothing, use `review`.
 
-1. `due --limit 5`를 실행한다. 사용자가 더 원하면 10까지 올릴 수 있다. `items`가 비었으면 오늘 복습할 것이 없다고 알리고 explore를 제안한다. `warnings`가 있으면 짧게 알린다.
-2. 항목마다 `card <path>`를 실행한다. 페이지 파일은 열지 않는다.
-3. **질문 하나**를 낸다. 대상은 `level`보다 Bloom 한 단계 위다.
-   - L0~1(또는 level 없음): 자기 말로 설명하기
-   - L2: 왜 그런지, 다른 개념과 어떻게 이어지는지
-   - L3: 새 사례에 적용하기
-   - L4: 반례, 한계, 트레이드오프
-4. `misconceptions`에 기록된 오해가 있으면 그 오해를 건드리는 질문을 **먼저** 한다.
-5. **추가 질문은 틀린 뒤에만** 한다. 맞혔으면 바로 채점한다. 힌트는 사용자가 요청하거나 한 번 틀린 뒤에만 준다.
-6. 채점 기준:
-   - `again`: 틀렸거나 비웠거나 기록된 오해를 되풀이함
-   - `hard`: 힌트가 있어야 맞히거나 부분적으로만 맞음
-   - `good`: 자기 말로 맞게 설명함
-   - `easy`: 맞고 거기서 확장하거나 다른 영역으로 옮김
-7. 모든 항목이 끝나면 `제목 → rating` 표를 보여 주고 **확인을 받는다**. 확인 전에는 `record`를 실행하지 않는다. 사용자가 고치면 반영한다.
-8. 확인을 받으면 `record [--date D] <page>=<rating> ...`을 실행한다 (페이지는 `due`가 준 `path`). 이 명령이 `data/reviews.csv`에 줄을 더하고 `chat/deck.md`를 다시 만든다.
-9. `again`을 받은 개념은 `/wiki-learn`이나 `/wiki-add`로 그 개념을 공부해 보라고 권한다. 퀴즈는 페이지를 고치지 않는다.
+## 1. review (default)
+
+1. Run `due --limit 5`. If the user wants more, raise it up to 10. If `items` is empty, tell the user there is nothing to review today and suggest explore. If `warnings` is non-empty, mention it briefly.
+2. For each item, run `card <path>`. Do not open the page file.
+3. Ask **one question**, one Bloom step above the `level`.
+   - L0-1 (or no level): explain it in their own words
+   - L2: why it is so, how it connects to other concepts
+   - L3: apply it to a new case
+   - L4: counterexamples, limits, trade-offs
+4. If `misconceptions` holds a recorded misconception, ask a question that touches it **first**.
+5. Ask **follow-up questions only after a wrong answer**. If the answer is right, grade it right away. Give hints only when the user asks.
+6. Grading criteria:
+   - `again`: wrong, or repeats a recorded misconception
+   - `hard`: right only with a hint, or only partly right
+   - `good`: explained correctly in their own words
+   - `easy`: right and extends it or carries it into another area
+   - Not graded: the user does not reply, or replies without attempting an answer to the question (for example, says they do not know, skips it, or changes the subject). Leave the item out of `record`.
+7. When all items are done, show a `제목 → rating` table of the graded items and **get confirmation**. If no item was graded, skip steps 7-8: nothing is recorded. Do not run `record` before confirmation. If the user corrects anything, apply it.
+8. After confirmation, run `record [--date D] <page>=<rating> ...` (the page is the `path` from `due`). This command appends rows to `data/reviews.csv` and rebuilds `chat/deck.md`.
+9. For concepts graded `again`, suggest studying them with `/wiki-learn` or `/wiki-add`. Grading does not edit pages.
 
 ## 2. explore
 
-1. 기본은 `frontier`를 실행해 위키가 `## 연결`이나 `## 다음 학습`에 링크만 걸고 아직 페이지가 없는 개념 중 하나를 고른다. 어느 것이 좋은지 사용자가 정하게 해도 된다.
-2. 사용자가 **랜덤**이라고 말했을 때만 무작위로 고른다. 이때는 `## Known` 목록(`chat/deck.md`)이나 `wiki/index.md`에 없는 개념을 아무거나 고른다.
-3. **사전 질문 하나**를 낸다. 답을 받으면 짧게 설명한다.
-4. `/wiki-learn`으로 이어서 공부할지 권한다. explore는 기록하지 않는다 (`record`도 `data/reviews.csv`도 쓰지 않는다).
+1. By default, run `frontier` and pick one of the concepts the wiki only links to from `## 연결` or `## 다음 학습` and that has no page yet. You may let the user choose which.
+2. Pick at random only when the user says **random**. Then pick any concept that is not in the `## Known` list (`chat/deck.md`) or in `wiki/index.md`.
+3. Ask **one pretest question**. After the answer, explain briefly.
+4. Suggest continuing with `/wiki-learn`. explore records nothing (neither `record` nor `data/reviews.csv`).
 
 ## 3. cram
 
-사용자가 고른 페이지나 `due` 목록으로 연습한다. 질문과 채점은 review와 같지만 기록하지 않는다 (`record`를 실행하지 않는다).
+Practice with pages the user picks or with the `due` list. Questions and grading are the same as review, but nothing is recorded (do not run `record`).
 
-## 4. 커밋
+## 4. Commit
 
-`root`가 git 저장소이고 `data/reviews.csv`나 `chat/`이 바뀌었을 때만 한다 (`git status --porcelain data/reviews.csv chat`로 확인).
+Do this only when `root` is a git repository and `record` ran in this session, that is, the user answered at least one quiz question (right or wrong). Do not commit when the user received questions but did not answer them or did not attempt an answer, nor for explore or cram; changes left by `sync` alone are committed later by `/daily`.
 
-1. `git add data/reviews.csv chat/`만 한다. `git add -A`는 쓰지 않는다.
-2. `git commit -m "quiz: <date> <개수>개 복습"`. 저장소 규칙이 `Request:`/`Intent:` 줄을 요구하면 붙인다.
-3. push는 하지 않는다. 클라우드 세션이면 `../wiki-add/SKILL.md`의 (k)를 따른다.
+1. `git add data/reviews.csv chat/`, plus, if `sync` imported `.learn.md` files, the pages in its `learn` list and `wiki/index.md` and `wiki/log.md`. Do not use `git add -A`.
+2. `git commit -m "quiz: <date> <개수>개 복습"`. If the repository's rules require `Request:`/`Intent:` lines, add them.
+3. Do not push. In a cloud session, follow (k) of `../wiki-add/SKILL.md`.
 
-바뀐 것이 없으면 커밋하지 않는다. 마지막에 제목별 rating을 간단히 보고한다.
+Finally, briefly report the rating for each graded title.

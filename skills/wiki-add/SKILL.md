@@ -3,139 +3,141 @@ name: wiki-add
 description: Study a keyword, file, or URL, or take in a short piece of knowledge the user just learned (a sentence or two from a lecture or article), through dialogue. Ask diagnostic questions to gauge understanding on the SOLO scale (0-4), teach at that level, then record the level, evidence, and misconceptions on the wiki concept page. Use for requests like "/wiki-add keyword", "/wiki-add file path or URL", "/wiki-add followed by a sentence the user learned", "let's study this", "I learned this today, put it in the wiki", "explain this and record my understanding level", or "/wiki-add import result file" (importing a result file made in claude.ai chat).
 ---
 
-# wiki-add: 아는 것을 대화로 확인하고 이해 수준과 함께 위키에 기록
+# wiki-add: check what the user knows through dialogue and record it in the wiki with an understanding level
 
-이 skill은 사용자가 어떤 개념을 **얼마나** 아는지를 개념 페이지에 남긴다. 입력은 셋 중 하나다.
-- 키워드: 공부할 주제 이름.
-- 자료: 파일 경로나 `http(s)://` URL.
-- 단편 지식: 사용자가 이미 배운 한두 문장. 들은 사실과 거기서 끌어낸 자기 추론이 섞여 있을 수 있다.
+This skill records **how well** the user knows a concept on its concept page. The input is one of three kinds.
+- Keyword: the name of a topic to study.
+- Material: a file path or an `http(s)://` URL.
+- Fragment: a sentence or two the user has already learned. It may mix facts they heard with their own inferences from those facts.
 
-입력이 무엇이든 흐름은 같다. 시작점 찾기 → 진단 → 수준 판정 → 수준별 대화 → 확인 → 기록. 입력 종류가 바꾸는 것은 진단을 어디서 시작하느냐뿐이다. 단편 지식은 사용자가 이미 한 첫 답변으로 보고, 그 문장이 보여 주지 못한 부분만 묻는다.
+The flow is the same for every input: find the starting point → diagnose → judge the level → level-matched dialogue → confirm → record. The input kind changes only where the diagnosis starts. Treat a fragment as the user's first answer, and ask only about what that sentence does not show.
 
-도구는 `uv run "<skill 폴더>/learn.py" <하위명령> ...`이다. `<skill 폴더>`는 이 skill이 로드될 때 Claude Code가 알려 주는 "Base directory"다. 출력은 JSON 한 줄이고, 실패하면 stderr 메시지와 종료 코드(2 잘못된 입력, 3 변환·내려받기 실패)를 준다.
+Talk with the user in Korean and write page content in Korean. Korean headings, markers, and quoted phrases below are literal strings that the scripts and existing pages use; write them exactly as given.
 
-토큰 비용을 지킨다. 자료는 변환본으로 한 번만 읽고, 위키는 `related` 상위 3개만 연다. 대화 전문은 어디에도 저장하지 않는다.
+The tool is `uv run "<skill dir>/learn.py" <subcommand> ...`. `<skill dir>` is the "Base directory" Claude Code reports when this skill loads. Output is one line of JSON; on failure it prints a message to stderr and exits with code 2 (bad input) or 3 (conversion or download failure).
 
-## (a) 환경 확인
+Keep token cost down. Read a material once, as its converted copy, and open only the top 3 `related` wiki pages. Never save the full conversation anywhere.
 
-먼저 `uv run "<skill 폴더>/learn.py" env`를 실행한다 (`mode`, `root`, `has_wiki`, `cloud_push`).
-- `uv`가 없으면 `python3 "<skill 폴더>/learn.py" env`로 실행한다 (`env`는 표준 라이브러리만 쓴다).
-- `mode`가 `chat`이거나, 명령을 아예 실행할 수 없거나, claude.ai 채팅이면 이 파일을 따르지 말고 `claude-ai.md`만 따른다.
-- `has_wiki`가 false면 사용자에게 `root`에 위키를 새로 만들어도 되는지 묻고, 동의하면 `init`을 실행한다. 거절하면 기록 없이 대화만 한다.
-- 이후 모든 명령에 `--root <root>`를 붙인다.
+## (a) Check the environment
 
-## (j) `/wiki-add import <파일>`
+First run `uv run "<skill dir>/learn.py" env` (returns `mode`, `root`, `has_wiki`, `cloud_push`).
+- If `uv` is missing, run `python3 "<skill dir>/learn.py" env` instead (`env` uses only the standard library).
+- If `mode` is `chat`, if no command can run at all, or if this is a claude.ai chat, do not follow this file; follow only `claude-ai.md`.
+- If `has_wiki` is false, ask the user whether a new wiki may be created at `root`, and run `init` if they agree. If they decline, hold the dialogue without recording.
+- Add `--root <root>` to every later command.
 
-인자가 `import <파일>`이면 대화 없이 `import <파일>`만 실행하고 결과(`page`, `created`, `level`, `sections_added`, `changed`)를 보고한다. 그다음 (k)로 간다.
+## (j) `/wiki-add import <file>`
 
-## (b) 입력 읽기
+If the argument is `import <file>`, run only `import <file>` with no dialogue and report the result (`page`, `created`, `previous_level`, `level`, `sections_added`, `changed`). Then go to (k).
 
-- **자료**(파일 경로, URL): `fetch <자료> --date today --slug <짧은-이름>`을 실행한다.
-  - 반환값에는 본문이 없다. `md` 파일을 **한 번만** 읽는다. `outline`이 null이 아니면(길다) 목차만 보고 필요한 구간만 `offset`/`limit`으로 읽는다. 다시 읽지 않는다.
-  - `duplicate_of`가 있으면 이미 가져온 자료다. 새로 만들지 않았으니 반환된 `md`를 읽는다. 사용자가 새 버전을 올렸다고 하면 그 사실을 알린다.
-  - 코드 2는 경로·주소 오류, 3은 변환 실패다. 메시지를 그대로 알리고 중단한다.
-  - `mode`가 `cloud`인데 URL이 코드 3으로 실패하면 이렇게 안내한다. "환경 네트워크를 Full 또는 Custom으로 바꾸거나, 본문을 붙여 넣어 주세요." 붙여 넣은 본문은 자료로 쓰되 `sources`에는 넣지 않는다.
-- **키워드**: 읽을 것이 없다. (c)로 간다.
-- **단편 지식**: `fetch`하지 않는다. 문장을 주장 단위로 나누고 각각을 둘 중 하나로 표시한다.
-  - 들은 것: 강의·글이 말한 사실. 출처를 함께 적어 둔다. 사용자가 말하지 않았으면 한 번 묻고, 모른다고 하면 비워 둔다.
-  - 내 추론: 사용자가 그 사실에서 끌어낸 결론, 예측, 다른 영역으로 넓힌 말.
+## (b) Read the input
 
-  나눈 결과를 한 줄씩 보여 주고 맞는지 확인받는다. 이 구분은 (e)의 판정과 (h)의 본문에 그대로 쓴다.
+- **Material** (file path, URL): run `fetch <material> --date today --slug <short-name>`.
+  - The return value has no body text. Read the `md` file **once**. If `outline` is not null (the file is long), look at the outline only and read just the needed ranges with `offset`/`limit`. Do not reread.
+  - If `duplicate_of` is set, the material was already fetched. Nothing new was created; read the returned `md`. If the user says they uploaded a new version, tell them it matched an already-fetched copy, so it was not fetched again. If `md` is null (the converted copy is missing), tell the user and ask them to paste the text.
+  - Code 2 is a path or address error, code 3 is a conversion failure. Relay the message as is and stop.
+  - If `mode` is `cloud` and a URL fails with code 3, tell the user: "환경 네트워크를 Full 또는 Custom으로 바꾸거나, 본문을 붙여 넣어 주세요." Use pasted text as the material, but do not put it in `sources`.
+- **Keyword**: there is nothing to read. Go to (c).
+- **Fragment**: do not `fetch`. Split the sentence into claims and mark each one as one of two kinds.
+  - 들은 것 (heard): a fact the lecture or article stated. Note its source with it. If the user did not give one, ask once; if they do not know, leave it blank.
+  - 내 추론 (my inference): a conclusion, prediction, or extension to another area that the user drew from that fact.
 
-## (c) 시작점 찾기
+  Show the split one line per claim and have the user confirm it. Use this split as is for the judgment in (e) and the page body in (h).
 
-`related <키워드 또는 제목> [--limit 3]`을 실행한다. 상위 최대 3개만 열어 기존 `level`, `## 이해 기록`, `## 오해와 교정`을 읽고 그것을 시작점으로 삼는다. 같은 개념의 페이지가 있으면 그 제목을 `record`에 그대로 쓴다. 없으면 새 페이지다.
+## (c) Find the starting point
 
-단편 지식이면 문장의 핵심 개념 이름으로 찾는다. 페이지 제목은 개념 이름이지 문장이 아니다. 단편은 대개 이미 있는 개념의 한 조각이므로, 같은 개념의 페이지가 있으면 새로 만들지 않고 거기에 합친다. 한 문장이 두 개념에 걸치면 주된 개념 하나에 기록하고 다른 개념은 (h)의 `## 연결`에 둔다.
+Run `related <keyword or title> --limit 3`. Open only those (at most 3) pages, read their existing `level`, `## 이해 기록`, and `## 오해와 교정`, and use them as the starting point. If a page for the same concept exists, pass its title unchanged to `record`. Otherwise it is a new page.
 
-## (d) 진단 질문
+For a fragment, search by the name of the sentence's core concept. A page title is a concept name, not a sentence. A fragment is usually one piece of a concept that already exists, so if a page for the same concept exists, merge into it instead of creating a new one. If one sentence spans two concepts, record it on the main concept and put the other under `## 연결` in (h).
 
-설명하기 전에 질문을 **하나씩** 던진다. 개정 Bloom 순서로 올라간다. 기억 → 이해 → 적용 → 분석.
-- 기억: "X가 뭔지 아는 대로 말해 줘."
-- 이해: "X를 처음 듣는 친구에게 자기 말로 설명해 본다면?"
-- 적용: "이런 상황이면 X를 어떻게 쓰겠어?"
-- 분석: "X와 Y는 어디가 같고 어디가 달라? 어떤 경우에 깨져?"
+## (d) Diagnostic questions
 
-먼저 자기 말로 설명하게 하고, 틀려도 답을 바로 알려 주지 않는다. 앞 답이 막히면 더 올라가지 않고 멈춘다. 기존 페이지가 있으면 이미 확인된 수준 아래 질문은 건너뛴다.
+Before explaining anything, ask questions **one at a time**, climbing the revised Bloom order: remember → understand → apply → analyze.
+- Remember: "X가 뭔지 아는 대로 말해 줘."
+- Understand: "X를 처음 듣는 친구에게 자기 말로 설명해 본다면?"
+- Apply: "이런 상황이면 X를 어떻게 쓰겠어?"
+- Analyze: "X와 Y는 어디가 같고 어디가 달라? 어떤 경우에 깨져?"
 
-질문 수는 입력에 따라 다르다.
-- 키워드·자료: 2~4개.
-- 단편 지식: 1~2개. 단편 자체를 첫 답변으로 치고, 그 문장이 이미 보여 준 단계는 다시 묻지 않는다. 사실 하나만 말했으면 "왜 그렇지?"(이해)를 묻는다. 원인과 결과를 이었으면 적용이나 반례(분석)를 묻는다. 특히 "내 추론"이 어디서 깨질 수 있는지를 묻는다. 강의 문장을 그대로 옮긴 것으로 보이면 먼저 자기 말로 다시 설명해 달라고 한다.
+Have the user explain in their own words first, and do not give the answer right away even when they are wrong. If an answer stalls, stop climbing. If a page already exists, skip questions below the level it already confirms.
 
-## (e) 수준 판정
+The number of questions depends on the input.
+- Keyword or material: 2-4.
+- Fragment: 1-2. Count the fragment itself as the first answer and do not re-ask a step it already shows. If it states a single fact, ask "왜 그렇지?" (understand). If it links cause and effect, ask for an application or a counterexample (analyze). In particular, ask where the "내 추론" part could break. If it looks copied verbatim from the lecture, first ask the user to explain it again in their own words.
 
-수준은 "나는 안다"는 자기평가가 아니라 **답변의 구조**로 판정한다 (SOLO). 단편 지식도 답변으로 보고 같은 표로 판정한다. 단 강의 문장을 그대로 옮긴 말은 기억(L1)의 근거로만 쓰고, 자기 말로 다시 설명하거나 적용한 답이 있어야 그 이상으로 올린다.
+## (e) Judge the level
 
-| level | 이름 | 답변에서 보이는 신호 |
+Judge the level by the **structure of the answers**, not by a self-assessment like "I know it" (SOLO). A fragment is also an answer and is judged on the same table. Words copied verbatim from a lecture count only as evidence for remember (L1); raise the level above that only when there is an answer that re-explains or applies the idea in the user's own words.
+
+| level | SOLO name | signals in the answer |
 |---|---|---|
-| 0 | 전구조적 | 모른다고 하거나 무관한 말. 용어를 다른 뜻으로 씀 |
-| 1 | 단일구조적 | 정의나 사실 하나만 말함. 예를 들거나 이유를 대지 못함 |
-| 2 | 다중구조적 | 사실을 여러 개 나열하지만 서로의 관계·이유는 없음 |
-| 3 | 관계적 | 원인·결과, 비교, 이유로 연결하고 새 사례에 적용함 |
-| 4 | 확장추상적 | 다른 영역으로 일반화하고 반례·한계·트레이드오프를 스스로 말함 |
+| 0 | 전구조적 | Says they do not know, or says something unrelated. Uses the term with a different meaning |
+| 1 | 단일구조적 | States only one definition or fact. Cannot give an example or a reason |
+| 2 | 다중구조적 | Lists several facts but no relations or reasons between them |
+| 3 | 관계적 | Connects them by cause and effect, comparison, or reason, and applies them to a new case |
+| 4 | 확장추상적 | Generalizes to other areas and raises counterexamples, limits, or trade-offs unprompted |
 
-근거는 사용자가 실제로 한 말에서 한 줄로 뽑는다. 판단이 갈리면 낮은 쪽을 택하고 확인 질문을 하나 더 한다.
+Take the evidence as one line from what the user actually said. When the judgment is split, choose the lower level and ask one more confirming question.
 
-"들은 것"이 사실과 다르거나 "내 추론"이 지나치게 일반화됐으면 오개념 후보로 기억해 두고 (f)에서 짚는다. 단편이라고 옳다고 가정하지 않는다.
+If a "들은 것" claim is factually wrong or a "내 추론" claim overgeneralizes, keep it as a misconception candidate and address it in (f). Do not assume a fragment is correct because it is short.
 
-## (f) 수준별 대화
+## (f) Level-matched dialogue
 
-- L0~1: 직관과 구체적 예시부터. 모자란 선수 개념을 한두 개 짚고 하나씩 설명한다.
-- L2: 이미 아는 조각들을 서로 연결하는 질문과 설명. "왜 그렇지?"를 묻는다.
-- L3: 적용 문제를 낸다. 사용자가 풀게 하고 막힐 때만 힌트.
-- L4: 비교, 반례, 한계, 다른 분야와의 대응을 놓고 토론한다.
-- 오개념은 발견 즉시 짚고, 왜 그렇게 생각했을지 묻고 바로잡는다. 기억해 두었다가 (g)에 쓴다.
-- 대화 중에 사용자가 수준에 맞는 답을 하면 다음 단계로 올린다. 한 번에 한 가지씩.
-- 다음 학습 후보를 기억해 둔다. 대화에 나왔지만 사용자가 자기 말로 설명하지 못한 개념(덜 이해함)과, 이 개념을 이해한 뒤 이어서 볼 만한 개념(이어서)이다. 지금 다루지 않는 개념은 길게 설명하지 않고 후보로만 남긴다.
-- 단편 지식이면 사용자는 대개 빠르게 남기기를 원한다. 오개념 교정과 수준 확인에 필요한 만큼만 대화하고, 더 공부할지는 사용자에게 묻는다. 더 하지 않으면 남은 것은 다음 학습 후보로 넘긴다.
+- L0-1: start from intuition and concrete examples. Point out one or two missing prerequisite concepts and explain them one at a time.
+- L2: questions and explanations that connect the pieces the user already knows. Ask "왜 그렇지?".
+- L3: pose application problems. Let the user solve them and give hints only when they are stuck.
+- L4: discuss comparisons, counterexamples, limits, and correspondences with other fields.
+- Address a misconception as soon as it appears: ask why they might have thought so, then correct it. Remember it for (g).
+- When the user answers well at the current level during the dialogue, move up to the next step. One thing at a time.
+- Remember next-study candidates: concepts that came up but the user could not explain in their own words (덜 이해함, not yet understood), and concepts worth studying after this one (이어서, next). Do not explain concepts outside the current one at length; just keep them as candidates.
+- For a fragment, the user usually wants to record it quickly. Talk only as much as misconception correction and level confirmation need, then ask the user whether to study further. If not, move what is left into the next-study candidates.
 
-## (g) 재판정과 확인
+## (g) Re-judge and confirm
 
-끝에 수준을 다시 판정한다. 그리고 **쓰기 전에** 아래를 보여 주고 확인을 받는다. 확인 전에는 `record`를 실행하지 않는다.
-- 페이지 제목(기존 페이지에 합치는지, 새 페이지인지), 이전 level → 새 level (SOLO 이름)
-- 근거 한 줄, 오개념과 교정 (있을 때), 요약 한 문장(새 페이지일 때)
-- 페이지에 들어갈 "내가 정리한 것"과 "보충 (LLM)" 요지, 새로 만들 연결
-- 다음 학습 항목 (덜 이해함 / 이어서, 각각 이유 한 구절)
+At the end, judge the level again. Then, **before writing**, show the following and get confirmation. Do not run `record` before confirmation.
+- Page title (merging into an existing page or a new page), previous level → new level (SOLO name)
+- One line of evidence, misconceptions and corrections (if any), a one-sentence summary (for a new page)
+- The gist of "내가 정리한 것" and "보충 (LLM)" for the page, and the new links to add
+- Next-study items (덜 이해함 / 이어서, each with a short reason)
 
-사용자가 고치면 반영하고 다시 보여 준다.
+If the user corrects anything, apply it and show it again.
 
-## (h) 본문 작성 규칙
+## (h) Page body rules
 
-`record`가 알려 준 `page`를 열어 아래 규칙으로 채운다. `level`, `## 이해 기록`, `## 오해와 교정`은 직접 고치지 않는다 (`learn.py`만 쓴다).
-- `## 내가 정리한 것`: 사용자가 말했거나 자료에 있는 내용만. 내 지식을 섞지 않는다. 단편 지식은 (b)의 구분을 살려 "내 추론"인 문장 끝에 `(내 추론)`을 붙인다. 기존 페이지에 합칠 때는 문장을 뒤에 덧붙이기만 하지 않는다. 같은 말은 하나로 합치고, 기존 내용과 이어지도록 섹션을 다시 정리한다. 기존 내용과 모순되면 지우지 말고 표시한 뒤 사용자에게 알린다.
-- `## 보충 (LLM)`: 내 지식. 판정한 수준에 맞는 어휘와 깊이로 쓴다.
-- 페이지가 없는 선수 개념은 `## 연결`에 `[[개념]] — 관계`로 링크만 적는다. 그 개념의 페이지는 사용자가 동의할 때만 만든다 (같은 절차로 `record`).
-- `## 다음 학습`: 한 줄에 하나, `- [[개념]] — 덜 이해함: <막힌 지점>` 또는 `- [[개념]] — 이어서: <다음에 볼 이유>`. 5줄 이내로 쓰고, 이번 대화에서 해결된 기존 항목은 지운다. 페이지가 없는 항목은 `/wiki-quiz explore`의 후보가 된다.
-- `## 출처`: `raw/` 파일이 없는 출처(강의명과 회차, 글 제목)는 `- <출처> (사용자 말, YYYY-MM-DD)` 한 줄로 적는다.
-- 템플릿 자리표시 줄(괄호 줄)은 내용으로 바꾼다.
+Open the `page` that `record` returned and fill it by these rules. Do not edit `level`, `## 이해 기록`, or `## 오해와 교정` directly (only `learn.py` writes them).
+- `## 내가 정리한 것`: only what the user said or what the material contains. Do not mix in your own knowledge. For a fragment, keep the split from (b) and append `(내 추론)` to the end of each "내 추론" sentence. When merging into an existing page, do not just append sentences at the end: merge duplicate statements into one and reorganize the section so it reads continuously with the existing content. If something contradicts the existing content, do not delete it; mark it and tell the user.
+- `## 보충 (LLM)`: your own knowledge, written with vocabulary and depth matched to the judged level.
+- For a prerequisite concept that has no page, write only a link under `## 연결` as `[[개념]] — 관계`. Create that concept's page only if the user agrees (with the same procedure, via `record`).
+- `## 다음 학습`: one item per line, either `- [[개념]] — 덜 이해함: <막힌 지점>` or `- [[개념]] — 이어서: <다음에 볼 이유>`. Keep it to 5 lines or fewer, and remove existing items that this dialogue resolved. Items without a page become candidates for `/wiki-quiz explore`.
+- `## 출처`: write a source that has no `raw/` file (lecture name and session, article title) as one line, `- <출처> (사용자 말, YYYY-MM-DD)`.
+- Replace template placeholder lines (lines in parentheses) with content.
 
-## (i) 기록
+## (i) Record
 
-확인을 받으면 실행한다.
+After confirmation, run:
 
 ```
-uv run "<skill 폴더>/learn.py" --root <root> record "<제목>" --level N --evidence "<근거>" \
+uv run "<skill dir>/learn.py" --root <root> record "<제목>" --level N --evidence "<근거>" \
   [--summary "<한 문장>"] [--misconception "<오개념과 교정>"] [--source <raw/... 경로> ...] [--date D]
 ```
 
-- 새 페이지에는 `--summary`가 필수다. 자료를 가져왔으면 `fetch`가 알려 준 `raw`(또는 `md`)를 `--source`로 준다. 단편 지식과 키워드에는 `--source`를 주지 않는다. 출처는 (h)대로 본문에 적는다.
-- `changed`가 false면 이미 같은 내용이 있다는 뜻이다. 그대로 알린다.
-- 이후 (h)대로 본문을 채운다. 대화 전문은 저장하지 않는다.
+- `--summary` is required for a new page. If a material was fetched, pass the `raw` (or `md`) that `fetch` returned as `--source`. Do not pass `--source` for a fragment or a keyword; write the source in the body as (h) says.
+- If `changed` is false, the same content is already there. Tell the user so.
+- Then fill the body as (h) says. Do not save the full conversation.
 
-## (k) 커밋과 push
+## (k) Commit and push
 
-`root`가 git 저장소일 때만 한다 (`git -C <root> rev-parse --show-toplevel`).
+Do this only when `root` is a git repository (`git -C <root> rev-parse --show-toplevel`).
 
-1. `git add`는 이번에 `record`/`import`/`fetch`가 알려 준 파일과 본문을 채운 페이지만 대상으로 한다. 곧 `record`가 알려 준 `page`, `wiki/index.md`, `wiki/log.md`, `raw/MANIFEST.csv`, 보관한 `raw/...` 파일이다. `git check-ignore -q <경로>`가 성공하는(무시되는) 경로는 빼고, `git add -A`는 쓰지 않는다.
-2. `git commit -m "add: <date> <제목>"`. 저장소 규칙이 `Request:`/`Intent:` 줄을 요구하면 붙인다.
-3. 이후는 `mode`에 따른다.
-   - `local`: 커밋만 한다. push하지 않는다.
-   - `cloud`이고 `cloud_push`가 `session-branch`: 현재 세션 브랜치에 `git push -u origin HEAD`.
-   - `cloud`이고 `cloud_push`가 `default-branch`: 기본 브랜치 이름 `<B>`를 `git symbolic-ref --short refs/remotes/origin/HEAD`(`origin/` 제거)로 얻는다. 그다음
+1. `git add` only the files that `record`/`import`/`fetch` reported this time and the page whose body you filled: the `page` from `record`, `wiki/index.md`, `wiki/log.md`, `raw/MANIFEST.csv`, and the archived `raw/...` files. Leave out paths for which `git check-ignore -q <path>` succeeds (ignored paths), and do not use `git add -A`.
+2. `git commit -m "add: <date> <제목>"`. If the repository's rules require `Request:`/`Intent:` lines, add them.
+3. The rest depends on `mode`.
+   - `local`: commit only. Do not push.
+   - `cloud` with `cloud_push` = `session-branch`: `git push -u origin HEAD` to the current session branch.
+   - `cloud` with `cloud_push` = `default-branch`: get the default branch name `<B>` from `git symbolic-ref --short refs/remotes/origin/HEAD` (strip `origin/`). Then
      ```
      git fetch origin <B>
      git rebase origin/<B>
      git push origin HEAD:<B>
      ```
-     `rebase`가 충돌하면 `git status`로 충돌 파일 목록을 얻어 두고 `git rebase --abort`를 실행한다. 그다음 `git push -u origin HEAD`로 세션 브랜치에 올리고, 기본 브랜치에는 반영되지 않았다는 사실과 충돌 파일을 사용자에게 알린다. push가 거절되면(`non-fast-forward`) 한 번만 `fetch`/`rebase`를 반복한다.
-4. 마지막에 보고한다. 제목, level 변화, 만들거나 바꾼 파일, push한 곳.
+     If `rebase` conflicts, save the list of conflicting files from `git status` and run `git rebase --abort`. Then push to the session branch with `git push -u origin HEAD`, and tell the user that the default branch was not updated, along with the conflicting files. If the push is rejected (`non-fast-forward`), repeat `fetch`/`rebase` once only.
+4. Finally report: title, level change, files created or changed, and where it was pushed.
