@@ -96,7 +96,7 @@ def test_loaders_match_chat_instruction_folders():
 @pytest.mark.parametrize("name", NAMES)
 def test_chat_instructions_reference_existing_repo_paths(name):
     text = (PLUGIN_ROOT / "skills" / name / "claude-ai.md").read_text(encoding="utf-8")
-    assert "<skill 폴더>" not in text and "zip" not in text
+    assert "<skill dir>" not in text and "zip" not in text
     for ref in re.findall(r"`(skills/[\w-]+/[\w.-]+)`", text):
         assert (PLUGIN_ROOT / ref).is_file(), ref
 
@@ -175,7 +175,7 @@ def test_O16_Y2_plugin_concept_equals_template():
 def test_O16_Y3_plugin_json_fields():
     data = json.loads((PLUGIN_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
     assert data["name"] == "llm-wiki"
-    assert data["version"] == "0.4.1"
+    assert data["version"] == "0.5.0"
     assert data["license"] == "MIT"
     assert "Doggy-Footprint" in json.dumps(data["author"])
     assert data["repository"] == "https://github.com/Doggy-Footprint/llm-wiki-plugin"
@@ -207,7 +207,7 @@ def test_O16_Y6_pep723_block_in_header():
 
 def test_O12_plugin_json_version_and_description():
     data = json.loads((PLUGIN_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
-    assert data["version"] == "0.4.1"
+    assert data["version"] == "0.5.0"
     desc = data["description"].lower()
     for name in NAMES:
         assert re.search(rf"(?<![\w-]){re.escape(name)}(?![\w-])", desc), name

@@ -1,31 +1,33 @@
-# claude.ai 채팅에서 뉴스레터·퀴즈로 공부하기
+# Studying from a newsletter or quiz in claude.ai chat
 
-claude.ai 채팅에서 쓰는 방식이다. 위키는 GitHub 저장소에 있고, 이 채팅은 거기서 `chat/deck.md`만 읽고 결과 파일 하나를 `chat/inbox/`에 올린다. 같은 저장소의 `skills/wiki-add/claude-ai.md`(대화·결과 파일 규칙)와 `skills/wiki-add/SKILL.md`(진단·수준 판정 기준)를 함께 읽는다.
+This is the procedure for claude.ai chat. The wiki lives in a GitHub repository; this chat reads only `chat/deck.md` there and uploads one result file to `chat/inbox/`. Read `skills/wiki-add/claude-ai.md` (dialogue and result-file rules) and `skills/wiki-add/SKILL.md` (diagnosis and level criteria) in the same repository as well.
 
-## 0. 저장소
+Talk with the user in Korean. Korean list formats and quoted messages below are shown to the user as written.
 
-저장소는 사용자의 프롬프트에 적힌 것을 쓰고, 없으면 로더 skill에 적힌 것을 쓴다. 둘 다 없을 때만 어느 저장소인지 먼저 묻는다.
+## 0. Repository
 
-## 1. 입력과 개념 고르기
+Use the repository named in the user's prompt; if none, the one named in the loader skill. Ask which repository first only when neither names one.
 
-- 입력은 이 채팅에 앞서 나온 뉴스레터·퀴즈 글이거나 사용자가 붙여 넣은 글이다.
-- 입력이 퀴즈 문제이면 개념을 나열하기 전에 사용자가 먼저 답하게 한다. 힌트도 정답도 주지 않는다.
-- 이미 아는 개념인지는 저장소의 `chat/deck.md`에서 `## Known` 목록만 읽어 확인한다 (GitHub 연결로 읽는다). 다른 페이지는 열지 않는다. 읽을 수 없으면 사용자에게 이 개념을 전에 공부했는지, 어느 수준이었는지 묻는다.
-- 입력에서 개념을 **최대 7개** 뽑아 한 줄씩 보여 준다. `- 개념 — 아는 개념 (제목, L수준)` 또는 `- 개념 — 새 개념`. 사용자가 하나를 고른다. 고르기 전에는 설명하지 않는다.
+## 1. Input and concept selection
 
-## 2. 대화와 최종 테스트
+- The input is a newsletter or quiz text that appeared earlier in this chat, or text the user pasted.
+- If the input is a quiz question, have the user answer first, before listing concepts. Give neither hints nor the answer.
+- To tell whether a concept is already known, read only the `## Known` list in the repository's `chat/deck.md` (through the GitHub connection). Do not open other pages. If it cannot be read, ask the user whether they studied the concept before and at what level.
+- Extract **at most 7** concepts from the input and show one line each: `- 개념 — 아는 개념 (제목, L수준)` or `- 개념 — 새 개념`. The user picks one. Do not explain anything before they pick.
 
-`skills/wiki-add/claude-ai.md`의 1~3절을 따른다. 진단 질문, 답변 구조로 하는 SOLO 판정, 수준별 대화, 확인, 결과 파일 만들기다. 단 수준은 그보다 **엄격하게** 판정하고(용어만 익숙하고 모르는 내용을 아는 것으로 판단하면 유저가 지식을 정확히 관리하기 어렵기 때문이다.), 확인 전에 **최종 테스트**를 넣는다.
+## 2. Dialogue and final test
 
-- 사용자가 답에서 다른 개념(용어, 기법, 이름)을 꺼내면 그 개념을 자기 말로 설명하거나 예를 들게 해 아는지 확인한다. 확인되지 않은 개념에 기댄 답은 수준의 근거로 쓰지 않고, 모자란 선수 개념으로 다룬다. 이번에 채우지 못한 선수 개념은 결과 파일의 `## 다음 학습`에 덜 이해함으로 남긴다.
-- 용어를 맞게 썼다는 것만으로 수준을 올리지 않는다. 다음 수준의 신호가 사용자의 말로 드러날 때만 올리고, 판단이 갈리면 낮은 쪽을 택한다. `chat/deck.md`의 기존 수준과 "안다"는 말은 시작점으로만 쓴다.
-- 교육이 끝나면 새 질문 2~3개로 시험한다. 앞서 던진 질문·설명한 예시와 겹치지 않게, 개정 Bloom의 적용·분석 수준으로 낸다. 한 번에 하나씩 묻고 힌트를 주지 않는다. 정답은 테스트가 끝난 뒤에 알려 준다.
-- 이 답변들로 같은 엄격한 기준에 따라 수준을 다시 판정하고, 근거는 사용자가 한 말 중 하나를 인용한다. 테스트에서 막힌 지점이 다른 개념 때문이면 그 개념을 다음 학습(덜 이해함)에 더한다. 확인 절차(`skills/wiki-add/claude-ai.md` 2절)는 그 판정으로 한다.
+Follow sections 1-3 of `skills/wiki-add/claude-ai.md`: diagnostic questions, SOLO judgment by answer structure, level-matched dialogue, confirmation, and creating the result file. But judge the level **more strictly** than there (judging content the user does not know as known, just because the terms sound familiar, keeps the user from managing their knowledge accurately), and add a **final test** before confirmation.
 
-## 3. 결과 파일 전달
+- When the user brings up another concept (a term, technique, or name) in an answer, check that they know it by having them explain it in their own words or give an example. Do not use an answer that leans on an unconfirmed concept as evidence for a level; treat that concept as a missing prerequisite. Leave prerequisites not filled in this session under the result file's `## 다음 학습` as 덜 이해함.
+- Do not raise the level just because a term was used correctly. Raise it only when signals of the next level show in the user's own words, and choose the lower level when the judgment is split. Use the existing level in `chat/deck.md` and claims of "I know it" only as a starting point.
+- When teaching is done, test with 2-3 new questions. Make them not overlap earlier questions or the examples used, and pitch them at the apply and analyze levels of revised Bloom. Ask one at a time and give no hints. Give the correct answers only after the test ends.
+- Re-judge the level from these answers by the same strict criteria, quoting one thing the user said as evidence. If a point where the user got stuck in the test is due to another concept, add that concept to 다음 학습 (덜 이해함). Run the confirmation step (section 2 of `skills/wiki-add/claude-ai.md`) with that judgment.
 
-확인을 받아 `.learn.md`를 만든 뒤(`skills/wiki-add/claude-ai.md` 3절), 저장소의 **기본 브랜치**에 `chat/inbox/<파일 이름>`으로 GitHub 연결을 통해 커밋한다. 커밋 메시지는 `chat: <날짜> <제목>`이다.
+## 3. Deliver the result file
 
-커밋이 실패하면(권한 없음, 연결 없음, 거절) 파일을 첨부해 내려받게 하고 이렇게 알린다. "저장소의 `chat/inbox/`에 이 파일을 넣어 주세요. 다음 `/daily`나 `quiz.py sync`가 가져갑니다."
+After confirmation, create the `.learn.md` (section 3 of `skills/wiki-add/claude-ai.md`) and commit it to the repository's **default branch** as `chat/inbox/<file name>` through the GitHub connection. The commit message is `chat: <날짜> <제목>`.
 
-Claude Code에서 직접 가져오려면 `/wiki-add import <파일>`도 된다.
+If the commit fails (no permission, no connection, rejected), attach the file for download and tell the user: "저장소의 `chat/inbox/`에 이 파일을 넣어 주세요. 다음 `/daily`나 `quiz.py sync`가 가져갑니다."
+
+To import it directly in Claude Code, `/wiki-add import <file>` also works.

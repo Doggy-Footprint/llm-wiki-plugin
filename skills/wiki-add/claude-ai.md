@@ -1,37 +1,39 @@
-# claude.ai 채팅에서 공부하기
+# Studying in claude.ai chat
 
-claude.ai 채팅에는 위키도 저장소도 없다. 같은 방식으로 진단하고 대화한 뒤, 결과를 **파일 하나**로 만들어 내려받게 한다. 이 파일은 나중에 위키로 가져온다 (`/wiki-add import <파일>`).
+A claude.ai chat has neither the wiki nor the repository. Diagnose and talk the same way, then produce the result as **one file** for the user to download. That file is brought into the wiki later (`/wiki-add import <file>`).
 
-## 1. 대화
+Talk with the user in Korean and write the result file in Korean. Korean headings, markers, and quoted phrases below are literal strings that the import script and existing pages use; write them exactly as given.
 
-`skills/wiki-add/SKILL.md`의 (c)~(h)와 같은 기준을 쓴다. 단 `env`, `fetch`, `related`, `record`, git 절차는 쓰지 않는다.
-- 시작점: 위키를 열 수 없으니 사용자에게 이 주제를 전에 공부했는지, 어느 수준이었는지 묻는다. 모르면 L0에서 시작한다.
-- 자료: 사용자가 올린 파일이나 붙여 넣은 글을 한 번만 읽는다. 길면 목차부터 보고 필요한 구간만 본다.
-- 단편 지식(사용자가 배운 한두 문장): `skills/wiki-add/SKILL.md`의 (b)대로 들은 것과 내 추론으로 나눠 확인받고, 제목은 문장이 아니라 핵심 개념 이름으로 정한다.
-- 진단 질문은 개정 Bloom 순(기억 → 이해 → 적용 → 분석)으로 하나씩 던진다. 키워드·자료는 2~4개, 단편 지식은 단편을 첫 답변으로 치고 1~2개다 (`skills/wiki-add/SKILL.md`의 (d)). 먼저 자기 말로 설명하게 한다.
-- 수준은 자기평가가 아니라 답변 구조로 SOLO 0~4를 판정한다 (표는 `skills/wiki-add/SKILL.md`의 (e)). 수준별 대화 방식도 (f)를 따른다. 오개념은 바로 짚는다.
-- 대화 전문은 저장하지 않는다. 결과 파일에는 정리한 내용만 넣는다.
+## 1. Dialogue
 
-## 2. 확인
+Use the same criteria as (c)-(h) of `skills/wiki-add/SKILL.md`, except do not use `env`, `fetch`, `related`, `record`, or the git steps.
+- Starting point: the wiki cannot be opened, so ask the user whether they studied this topic before and at what level. If they do not know, start at L0.
+- Material: read a file the user uploaded or text they pasted once. If it is long, look at its outline first and read only the needed parts.
+- Fragment (a sentence or two the user learned): split it into 들은 것 (heard) and 내 추론 (my inference) and have the user confirm, as in (b) of `skills/wiki-add/SKILL.md`. Name the title after the core concept, not the sentence.
+- Ask diagnostic questions one at a time in revised Bloom order (remember → understand → apply → analyze): 2-4 for a keyword or material; for a fragment, count the fragment as the first answer and ask 1-2 (see (d) of `skills/wiki-add/SKILL.md`). Have the user explain in their own words first.
+- Judge SOLO 0-4 by the structure of the answers, not by self-assessment (table in (e) of `skills/wiki-add/SKILL.md`). Follow (f) for level-matched dialogue as well. Address misconceptions right away.
+- Do not save the full conversation. Put only the organized content in the result file.
 
-끝에 수준을 다시 판정하고, 아래를 보여 준 뒤 확인을 받는다. 확인 전에는 파일을 만들지 않는다.
-- 제목(개념 이름), level (SOLO 이름), 요약 한 문장, 근거 한 줄, 오개념과 교정(있을 때)
-- 내가 정리한 것 (사용자 말만. 단편 지식의 내 추론 문장 끝에는 `(내 추론)`, 들은 것 문장 끝에는 `(출처: <강의·글>)`), 보충 (LLM) (수준에 맞춰), 연결 (`[[개념]] — 관계` 줄)
-- 다음 학습 (`[[개념]] — 덜 이해함: <막힌 지점>` 또는 `[[개념]] — 이어서: <다음에 볼 이유>` 줄, 5줄 이내). 덜 이해함은 대화에 나왔지만 사용자가 자기 말로 설명하지 못한 개념, 이어서는 이 개념 다음에 볼 만한 개념이다.
+## 2. Confirm
 
-## 3. 결과 파일 만들기
+At the end, judge the level again, show the following, and get confirmation. Do not create the file before confirmation.
+- Title (concept name), level (SOLO name), a one-sentence summary, one line of evidence, misconceptions and corrections (if any)
+- 내가 정리한 것 (only what the user said; append `(내 추론)` to each "내 추론" sentence of a fragment and `(출처: <강의·글>)` to each "들은 것" sentence), 보충 (LLM) (matched to the level), and links (`[[개념]] — 관계` lines)
+- 다음 학습 (lines of `[[개념]] — 덜 이해함: <막힌 지점>` or `[[개념]] — 이어서: <다음에 볼 이유>`, 5 lines or fewer). 덜 이해함 is a concept that came up in the dialogue but the user could not explain in their own words; 이어서 is a concept worth studying after this one.
 
-**코드 실행이 켜져 있으면** `<스크립트 폴더>/learn.py`로 만든다. `<스크립트 폴더>`는 로더 skill이 이 스크립트를 내려받은 폴더다. 내용 인자는 확인받은 그대로 넣는다.
+## 3. Create the result file
+
+**If code execution is on**, create it with `<script dir>/learn.py`. `<script dir>` is the folder where the loader skill downloaded this script. Pass the content arguments exactly as confirmed.
 
 ```
-python3 "<스크립트 폴더>/learn.py" result "<제목>" --level N --summary "<요약>" --evidence "<근거>" \
+python3 "<script dir>/learn.py" result "<제목>" --level N --summary "<요약>" --evidence "<근거>" \
   --out /mnt/user-data/outputs [--misconception "<오개념>"] --mine "<내가 정리한 것>" \
   --supplement "<보충>" --link "[[개념]] — 관계" --next "[[개념]] — 덜 이해함: <막힌 지점>" --date YYYY-MM-DD
 ```
 
-`--link`와 `--next`는 줄마다 한 번씩 반복한다. 출력 JSON의 `path`가 만들어진 파일이다. `--out`은 내려받을 수 있는 폴더(없으면 현재 폴더)를 쓴다. 파일을 첨부해 내려받게 한다. 날짜는 오늘 날짜를 `YYYY-MM-DD`로 쓴다.
+Repeat `--link` and `--next` once per line. The `path` in the output JSON is the created file. For `--out`, use a downloadable folder (or the current folder if there is none). Attach the file for download. Use today's date as `YYYY-MM-DD`.
 
-**코드 실행이 꺼져 있거나 스크립트를 내려받지 못했으면** 아래 형식 그대로 직접 써서 보여 주고, `<날짜>-<제목>.learn.md` 파일로 저장해 두라고 안내한다. 첫 줄은 반드시 `---`이고 frontmatter는 `key: value` 한 줄씩이다 (값에 줄바꿈 금지, `misconception`은 없으면 줄째 생략).
+**If code execution is off or the script could not be downloaded**, write the file yourself in exactly the format below, show it, and tell the user to save it as `<날짜>-<제목>.learn.md`. The first line must be `---`, and the frontmatter is one `key: value` per line (no line breaks inside values; omit the `misconception` line entirely if there is none).
 
 ```
 ---
@@ -59,10 +61,10 @@ misconception: <오개념과 교정 한 줄>
 - [[개념]] — 이어서: <다음에 볼 이유>
 ```
 
-제목에는 `/`, `\`, 맨 앞 `.`를 쓰지 않고 100자를 넘기지 않는다. level은 0~4 정수다.
+The title must not contain `/` or `\`, must not start with `.`, and must be at most 100 characters. level is an integer from 0 to 4.
 
-## 4. 위키로 가져오기 안내
+## 4. Explain how to bring it into the wiki
 
-파일을 만든 뒤 사용자에게 이렇게 알린다.
-- Google Drive의 `LLM-wiki-inbox` 폴더에 저장하면 다음 `/ingest`나 `/daily` 때 위키로 가져온다.
-- 또는 Claude Code에서 `/wiki-add import <파일>`을 실행한다.
+After creating the file, tell the user:
+- If they save it in the Google Drive folder `LLM-wiki-inbox`, the next `/ingest` or `/daily` brings it into the wiki.
+- Or they can run `/wiki-add import <file>` in Claude Code.

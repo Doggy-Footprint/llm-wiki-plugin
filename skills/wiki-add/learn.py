@@ -32,16 +32,17 @@ LINK_PLACEHOLDER = "- [[관련 개념]] — 어떤 관계인지"
 
 INDEX_TEXT = (
     "# Index\n\n"
-    "위키를 다룰 때 가장 먼저 읽는 목차. 페이지마다 한 줄: `- [[제목]] — 한 줄 설명`\n\n"
-    "편집 규칙:\n"
-    "- 파일명 = 페이지 제목, 링크는 `[[제목]]`. 새 페이지는 `templates/`에서 시작하고 여기에 한 줄 추가한다.\n"
-    "- frontmatter는 `key: value`, `key: [a, b]`만 쓴다. 중첩은 쓰지 않는다.\n"
-    "- 사용자·자료에서 온 내용과 LLM 보충은 섹션을 나눈다.\n"
-    "- `level`(SOLO 0~4)과 `## 이해 기록`·`## 오해와 교정`은 `/wiki-add`(`learn.py`)만 쓴다.\n"
-    "- 무엇이든 바꾸면 `wiki/log.md`에 한 줄을 덧붙인다.\n\n"
+    "The table of contents to read first when working on the wiki. One line per page: `- [[제목]] — 한 줄 설명`. "
+    "Write page content in Korean.\n\n"
+    "Editing rules:\n"
+    "- File name = page title; link as `[[제목]]`. Start a new page from `templates/` and add one line here.\n"
+    "- Frontmatter uses only `key: value` and `key: [a, b]`. No nesting.\n"
+    "- Keep content from the user or materials and LLM supplements in separate sections.\n"
+    "- Only `/wiki-add` (`learn.py`) writes `level` (SOLO 0-4), `## 이해 기록`, and `## 오해와 교정`.\n"
+    "- Whenever anything changes, append one line to `wiki/log.md`.\n\n"
     f"{STUDY_HEADING}\n"
 )
-LOG_TEXT = "# Log\n\n기록을 덧붙이기만 한다. 형식: `- YYYY-MM-DD [작업] 내용`\n\n"
+LOG_TEXT = "# Log\n\nAppend only. Format: `- YYYY-MM-DD [작업] 내용`\n\n"
 
 
 class LearnError(Exception):
