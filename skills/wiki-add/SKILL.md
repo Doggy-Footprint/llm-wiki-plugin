@@ -1,6 +1,7 @@
 ---
 name: wiki-add
 description: Study a keyword, file, or URL, or take in a short piece of knowledge the user just learned (a sentence or two from a lecture or article), through dialogue. Ask diagnostic questions to gauge understanding on the SOLO scale (0-4), teach at that level, then record the level, evidence, and misconceptions on the wiki concept page. Use for requests like "/wiki-add keyword", "/wiki-add file path or URL", "/wiki-add followed by a sentence the user learned", "let's study this", "I learned this today, put it in the wiki", "explain this and record my understanding level", or "/wiki-add import result file" (importing a result file made in claude.ai chat).
+disable-model-invocation: true
 ---
 
 # wiki-add: check what the user knows through dialogue and record it in the wiki with an understanding level
