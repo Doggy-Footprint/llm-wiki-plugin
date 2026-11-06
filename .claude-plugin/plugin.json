@@ -1,7 +1,7 @@
 {
   "name": "llm-wiki",
-  "version": "0.7.0",
-  "description": "키워드·파일·URL로 LLM과 대화하며 공부하고 이해 수준(SOLO 0~4)과 오개념을 Obsidian 호환 위키에 기록하는 wiki-add, 뉴스레터·퀴즈에서 개념을 골라 공부하는 wiki-learn, FSRS로 복습 일정을 잡아 퀴즈를 내는 wiki-quiz, 학습 목표를 영역·개념·선수 관계가 있는 목표 지도로 만드는 wiki-goal skill",
+  "version": "0.8.0",
+  "description": "키워드·파일·URL로 LLM과 대화하며 공부하고 이해 수준(SOLO 0~4)과 오개념을 Obsidian 호환 위키에 기록하는 wiki-add, 뉴스레터·퀴즈에서 개념을 골라 공부하는 wiki-learn, FSRS로 복습 일정을 잡아 퀴즈를 내는 wiki-quiz, 학습 목표를 영역·개념·선수 관계가 있는 목표 지도로 만드는 wiki-goal, 삶·일하는 방식에 대한 깨달음을 질문 제목의 insight 페이지로 남기는 wiki-insight skill",
   "author": {
     "name": "Doggy-Footprint"
   },
