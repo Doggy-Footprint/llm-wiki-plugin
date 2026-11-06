@@ -14,8 +14,9 @@ import pytest
 import build_zip
 from learn_support import PLUGIN_ROOT, SKILL_DIR, TEMPLATE
 
-NAMES = ["wiki-add", "wiki-learn", "wiki-quiz"]
-SCRIPTS = {"wiki-add": "skills/wiki-add/learn.py", "wiki-learn": "skills/wiki-add/learn.py",
+NAMES = ["wiki-add", "wiki-goal", "wiki-learn", "wiki-quiz"]
+SCRIPTS = {"wiki-add": "skills/wiki-add/learn.py", "wiki-goal": "skills/wiki-goal/goal.py",
+           "wiki-learn": "skills/wiki-add/learn.py",
            "wiki-quiz": "skills/wiki-quiz/quiz.py"}
 RAW_PREFIX = "https://raw.githubusercontent.com/Doggy-Footprint/llm-wiki-plugin/main/"
 
@@ -168,7 +169,7 @@ def test_O16_Y2_plugin_concept_equals_template():
 def test_O16_Y3_plugin_json_fields():
     data = json.loads((PLUGIN_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
     assert data["name"] == "llm-wiki"
-    assert data["version"] == "0.3.1"
+    assert data["version"] == "0.4.0"
     assert data["license"] == "MIT"
     assert "Doggy-Footprint" in json.dumps(data["author"])
     assert data["repository"] == "https://github.com/Doggy-Footprint/llm-wiki-plugin"
@@ -200,7 +201,7 @@ def test_O16_Y6_pep723_block_in_header():
 
 def test_O12_plugin_json_version_and_description():
     data = json.loads((PLUGIN_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
-    assert data["version"] == "0.3.1"
+    assert data["version"] == "0.4.0"
     desc = data["description"].lower()
     for name in NAMES:
         assert re.search(rf"(?<![\w-]){re.escape(name)}(?![\w-])", desc), name

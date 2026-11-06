@@ -1,0 +1,40 @@
+id = "sql-basics"
+title = "SQL 기초"
+kind = "subjective"
+
+[source]
+note = "사용자 목표: 조인과 집계 쿼리를 혼자 짤 수 있다. 기한 없음. 우선순위는 사용자가 말한 대로 SQL 활용 > 모델링."
+
+[[areas]]
+id = "modeling"
+name = "데이터 모델링"
+weight = 1
+
+[[areas]]
+id = "query"
+name = "SQL 활용"
+weight = 3
+
+[[concepts]]
+id = "entity"
+name = "엔터티"
+area = "modeling"
+aliases = ["Entity", "엔티티"]
+
+[[concepts]]
+id = "join"
+name = "조인"
+area = "query"
+section = "SQL 활용"
+aliases = ["JOIN", "INNER JOIN", "OUTER JOIN"]
+
+[[concepts]]
+id = "group-by"
+name = "GROUP BY와 집계 함수"
+area = "query"
+aliases = ["집계", "HAVING"]
+
+[[prereqs]]
+from = "entity"
+to = "join"
+basis = "inferred"

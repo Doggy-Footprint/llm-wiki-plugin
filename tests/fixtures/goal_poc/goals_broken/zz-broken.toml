@@ -1,0 +1,28 @@
+id = "zz-broken"
+title = "순환 목표"
+kind = "official"
+
+[[areas]]
+id = "a"
+name = "A"
+weight = 1
+
+[[concepts]]
+id = "x"
+name = "엑스"
+area = "a"
+
+[[concepts]]
+id = "y"
+name = "와이"
+area = "a"
+
+[[prereqs]]
+from = "x"
+to = "y"
+basis = "user"
+
+[[prereqs]]
+from = "y"
+to = "x"
+basis = "user"

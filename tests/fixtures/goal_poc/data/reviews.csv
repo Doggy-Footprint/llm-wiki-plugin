@@ -1,0 +1,5 @@
+date,page,rating,mode,source,result_id
+2026-01-05,wiki/concepts/join.md,hard,quiz,quiz.py,r1
+2026-01-10,wiki/concepts/join.md,good,quiz,quiz.py,r2
+2026-01-07,wiki/concepts/group-by.md,easy,quiz,quiz.py,r3
+2026-01-08,wiki/concepts/window-function.md,again,quiz,quiz.py,r4
