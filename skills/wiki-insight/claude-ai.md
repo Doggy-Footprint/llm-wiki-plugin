@@ -1,12 +1,12 @@
 # Keeping an insight in claude.ai chat
 
-This is the procedure for claude.ai chat. The wiki lives in a GitHub repository; this chat reads only `chat/insights.md` there and uploads one result file to `chat/inbox/`. The wiki applies it later (`insight.py sync`). Read `skills/wiki-insight/SKILL.md` in the same repository for what an insight page is; do not follow its tool runs or its sections (a), (c), and (e).
+This is the procedure for claude.ai chat. The wiki lives in a GitHub repository; this chat reads only `chat/insights.md` there and uploads one result file to `chat/inbox/`. The wiki applies it later (`insight.py sync`). Read `skills/wiki-insight/SKILL.md` in this plugin for what an insight page is; do not follow its tool runs or its sections (a), (c), and (e). A `skills/<name>/...` path in this file is a file of this plugin's `<name>` skill; this skill's own files are next to this file, in `<this folder>`.
 
 Talk with the user in Korean and write the result file in Korean. Korean headings and quoted phrases below are literal strings that the import script uses; write them exactly as given.
 
 ## 0. Repository
 
-Use the repository named in the user's prompt; if none, the one named in the loader skill. Ask which repository first only when neither names one.
+Use the repository named in the user's prompt; if none, the GitHub repository `Doggy-Footprint/LLM-wiki` (default branch `master`).
 
 ## 1. Hear the realization
 
@@ -24,7 +24,7 @@ Show the title, area (new only), 지금 생각, the line `- 날짜: 사용자 �
 
 ## 4. Create the result file
 
-**If code execution is on**, create it with `<script dir>/insight.py`. `<script dir>` is the folder where the loader skill downloaded this script. Pass the content exactly as confirmed; omit `--area` for an existing title, and omit `--now` and `--confidence` when they did not change.
+**If code execution is on**, create it with `<script dir>/insight.py`. `<script dir>` is `/tmp/llm-wiki`. Before the first run, copy the script there once: `mkdir -p /tmp/llm-wiki && cp "<this folder>/insight.py" /tmp/llm-wiki/`. Pass the content exactly as confirmed; omit `--area` for an existing title, and omit `--now` and `--confidence` when they did not change.
 
 ```
 python3 "<script dir>/insight.py" result "<제목>" --said "<사용자 말>" --out /mnt/user-data/outputs \
@@ -34,7 +34,7 @@ python3 "<script dir>/insight.py" result "<제목>" --said "<사용자 말>" --o
 
 Repeat `--link` once per line. The `path` in the output JSON is the created file. For `--out`, use a downloadable folder (or the current folder if there is none). Use today's date.
 
-**If code execution is off or the script could not be downloaded**, write the file yourself in exactly the format below. The first line must be `---`, and the frontmatter is one `key: value` per line (no line breaks inside values). Omit the `area`, `confidence`, and `now` lines when they do not apply.
+**If code execution is off or the script could not be copied**, write the file yourself in exactly the format below. The first line must be `---`, and the frontmatter is one `key: value` per line (no line breaks inside values). Omit the `area`, `confidence`, and `now` lines when they do not apply.
 
 ```
 ---

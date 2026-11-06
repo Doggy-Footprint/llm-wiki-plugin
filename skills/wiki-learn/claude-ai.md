@@ -1,12 +1,12 @@
 # Studying from a newsletter or quiz in claude.ai chat
 
-This is the procedure for claude.ai chat. The wiki lives in a GitHub repository; this chat reads only `chat/deck.md` there and uploads one result file to `chat/inbox/`. Read `skills/wiki-add/claude-ai.md` (dialogue and result-file rules) and `skills/wiki-add/SKILL.md` (diagnosis and level criteria) in the same repository as well.
+This is the procedure for claude.ai chat. The wiki lives in a GitHub repository; this chat reads only `chat/deck.md` there and uploads one result file to `chat/inbox/`. Read `skills/wiki-add/claude-ai.md` (dialogue and result-file rules) and `skills/wiki-add/SKILL.md` (diagnosis and level criteria) in this plugin as well. A `skills/<name>/...` path in this file is a file of this plugin's `<name>` skill; this skill's own files are next to this file, in `<this folder>`. wiki-add's files are in the `wiki-add` folder next to `<this folder>`. If it is not there, find it with `find / -path '*/wiki-add/learn.py' -not -path '/proc/*' 2>/dev/null`; if it cannot be found, tell the user that this plugin's wiki-add skill is missing and stop.
 
 Talk with the user in Korean. Korean list formats and quoted messages below are shown to the user as written.
 
 ## 0. Repository
 
-Use the repository named in the user's prompt; if none, the one named in the loader skill. Ask which repository first only when neither names one.
+Use the repository named in the user's prompt; if none, the GitHub repository `Doggy-Footprint/LLM-wiki` (default branch `master`).
 
 ## 1. Input and concept selection
 

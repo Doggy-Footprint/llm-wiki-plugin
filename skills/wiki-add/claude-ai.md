@@ -1,6 +1,6 @@
 # Studying in claude.ai chat
 
-A claude.ai chat has neither the wiki nor the repository. Diagnose and talk the same way, then produce the result as **one file** for the user to download. That file is brought into the wiki later (`/wiki-add import <file>`).
+A claude.ai chat has neither the wiki nor the repository. Diagnose and talk the same way, then produce the result as **one file** for the user to download. That file is brought into the wiki later (`/wiki-add import <file>`). A `skills/<name>/...` path in this file is a file of this plugin's `<name>` skill; this skill's own files are next to this file, in `<this folder>`.
 
 Talk with the user in Korean and write the result file in Korean. Korean headings, markers, and quoted phrases below are literal strings that the import script and existing pages use; write them exactly as given.
 
@@ -23,7 +23,7 @@ At the end, judge the level again, show the following, and get confirmation. Do 
 
 ## 3. Create the result file
 
-**If code execution is on**, create it with `<script dir>/learn.py`. `<script dir>` is the folder where the loader skill downloaded this script. Pass the content arguments exactly as confirmed.
+**If code execution is on**, create it with `<script dir>/learn.py`. `<script dir>` is `/tmp/llm-wiki`. Before the first run, copy the script there once: `mkdir -p /tmp/llm-wiki && cp "<this folder>/learn.py" /tmp/llm-wiki/`. Pass the content arguments exactly as confirmed.
 
 ```
 python3 "<script dir>/learn.py" result "<제목>" --level N --summary "<요약>" --evidence "<근거>" \
@@ -33,7 +33,7 @@ python3 "<script dir>/learn.py" result "<제목>" --level N --summary "<요약>"
 
 Repeat `--link` and `--next` once per line. The `path` in the output JSON is the created file. For `--out`, use a downloadable folder (or the current folder if there is none). Attach the file for download. Use today's date as `YYYY-MM-DD`.
 
-**If code execution is off or the script could not be downloaded**, write the file yourself in exactly the format below, show it, and tell the user to save it as `<날짜>-<제목>.learn.md`. The first line must be `---`, and the frontmatter is one `key: value` per line (no line breaks inside values; omit the `misconception` line entirely if there is none).
+**If code execution is off or the script could not be copied**, write the file yourself in exactly the format below, show it, and tell the user to save it as `<날짜>-<제목>.learn.md`. The first line must be `---`, and the frontmatter is one `key: value` per line (no line breaks inside values; omit the `misconception` line entirely if there is none).
 
 ```
 ---
