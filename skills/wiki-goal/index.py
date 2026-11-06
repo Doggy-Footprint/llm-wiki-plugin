@@ -34,8 +34,6 @@ BATCH = 64
 TOP = 50
 RRF_K = 60
 SKIP_PAGES = {"wiki/index.md", "wiki/log.md"}
-# insight(주관적 기록) 페이지는 외부 임베딩 API로 보내지 않는다.
-NO_EMBED_TYPES = {"insight"}
 TOKEN_RE = re.compile(r"[0-9a-z_]+|[가-힣]+")
 HANGUL_RE = re.compile(r"[가-힣]+")
 
@@ -195,7 +193,8 @@ def api_key(root: Path, environ: Mapping[str, str]) -> str | None:
 
 
 def embedding_config(root: Path) -> dict:
-    cfg = {"model": "text-embedding-3-small", "dim": 768, "min_free_mb": 0, "command": None}
+    # insight(주관적 기록)는 기본으로 외부 임베딩 API에 보내지 않는다. 로컬 임베더를 쓰는 위키는 skip_types = []로 푼다.
+    cfg = {"model": "text-embedding-3-small", "dim": 768, "min_free_mb": 0, "command": None, "skip_types": ["insight"]}
     path = Path(root) / "config.toml"
     if not path.is_file():
         return cfg
@@ -375,8 +374,11 @@ def _unpack(blob: bytes) -> list[float]:
     return list(struct.unpack(f"<{len(blob) // 4}f", blob))
 
 
-def _embeddable(page: dict) -> bool:
-    return page["type"] not in NO_EMBED_TYPES
+def skip_types(root: Path) -> set[str]:
+    value = embedding_config(root)["skip_types"]
+    if not isinstance(value, list) or not all(isinstance(t, str) for t in value):
+        raise IndexToolError("config.toml: [embedding] skip_types must be a list of strings")
+    return set(value)
 
 
 def _embed(root: Path, embedder: Embedder, min_free_mb: float, free_mb) -> dict:
@@ -386,8 +388,9 @@ def _embed(root: Path, embedder: Embedder, min_free_mb: float, free_mb) -> dict:
         free = (free_mb or free_memory_mb)()
         if free is not None and free < min_free_mb:
             return {"embedded": 0, "unchanged": 0, "removed": 0, "skipped": "memory", "model": model, "dim": dim, "free_mb": free}
+    skip = skip_types(root)
     pages, _ = load_pages(root)
-    pages = [p for p in pages if _embeddable(p)]
+    pages = [p for p in pages if p["type"] not in skip]
     with closing(_connect(root)) as conn:
         conn.execute("BEGIN")
         try:
@@ -463,7 +466,8 @@ def search(
         raise IndexToolError("empty query")
     pages, warnings = load_pages(root)
     by_path = {p["path"]: p for p in pages}
-    hashes = {p["path"]: p["text_hash"] for p in pages if _embeddable(p)}
+    skip = skip_types(root)
+    hashes = {p["path"]: p["text_hash"] for p in pages if p["type"] not in skip}
     if embedder is not None:
         model, dim = embedder.model, embedder.dim
     else:
@@ -489,8 +493,8 @@ def search(
 
     vector: list[str] = []
     mode = "keyword"
-    if types is not None and types <= NO_EMBED_TYPES:
-        embedder = None  # 검색어도 그 페이지들의 내용이라 외부 API로 보내지 않는다.
+    if types is not None and skip and types <= skip:
+        embedder = None  # 검색어도 그 페이지들의 내용이라 임베더로 보내지 않는다.
     if embedder is not None:
         try:
             qvs = embedder.embed([query])

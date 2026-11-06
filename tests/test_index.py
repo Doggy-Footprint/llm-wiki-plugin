@@ -1342,3 +1342,48 @@ def test_command_timeout(tmp_path, monkeypatch):
     emb = index.CommandEmbedder("m", 4, ["x"], tmp_path)
     with pytest.raises(index.IndexToolError, match="timed out"):
         emb.embed(["a"])
+
+
+def _set_skip(root, value):
+    (root / "config.toml").write_text(f"[embedding]\nskip_types = {value}\n", encoding="utf-8")
+
+
+def test_skip_types_empty_embeds_insight(tmp_path):
+    root = make_root(tmp_path)
+    _set_skip(root, "[]")
+    _add_insight(root)
+    emb = fixture_embedder()
+    index.embed(root, emb)
+    assert any("집중" in t for t in emb.all_texts)
+    assert INSIGHT in {r[0] for r in vector_rows(root)}
+
+
+def test_skip_types_empty_sends_insight_query_to_embedder(tmp_path):
+    root = make_root(tmp_path)
+    _set_skip(root, "[]")
+    _add_insight(root)
+    emb = fixture_embedder()
+    index.embed(root, emb)
+    result = index.search(root, "조인", embedder=emb, types={"insight"})
+    assert result["mode"] == "hybrid"
+    assert result["stale_vectors"] == 0
+
+
+def test_skip_types_custom_type_excluded(tmp_path):
+    root = make_root(tmp_path)
+    _set_skip(root, '["concept"]')
+    _add_insight(root)
+    emb = fixture_embedder()
+    index.embed(root, emb)
+    embedded = {r[0] for r in vector_rows(root)}
+    assert INSIGHT in embedded
+    assert not any(p.startswith("wiki/concepts/") for p in embedded)
+
+
+@pytest.mark.parametrize("value", ['"insight"', '["insight", 1]'])
+def test_skip_types_must_be_string_list(tmp_path, capsys, value):
+    root = make_root(tmp_path)
+    _set_skip(root, value)
+    code, _, err = run_cli(index, ["--root", root, "embed"], capsys, embedder=fixture_embedder())
+    assert code == 2
+    assert "skip_types must be a list of strings" in err
