@@ -26,17 +26,18 @@ For review, use only the `level`, `summary`, `mine`, `misconceptions`, and `link
 - If there is a recorded misconception, ask a question that touches it first.
 - Ask follow-up questions only after a wrong answer.
 - Grade by these criteria:
-  - again: wrong, blank, or repeats a recorded misconception
+  - again: wrong, or repeats a recorded misconception
   - hard: right only with a hint, or only partly right
   - good: explained correctly in their own words
   - easy: right and extends it or carries it into another area
+  - not graded: the user does not reply, or replies without attempting an answer to the question (for example, says they do not know, skips it, or changes the subject). Leave the item out of the result.
 - Give hints only when the user asks.
 
 For explore, ask one pretest question, explain briefly, and offer to study the concept in depth with `wiki-learn`. Nothing is recorded.
 
 ## 4. Create the result
 
-Collect the grade for each item, show them, and get confirmation. Do not create the file before confirmation. For concepts graded again in review, suggest studying them with `/wiki-learn` or `/wiki-add`.
+Collect the grades of the graded items, show them, and get confirmation. Do not create the file before confirmation. If no item was graded, create no file and commit nothing. For concepts graded again in review, suggest studying them with `/wiki-learn` or `/wiki-add`.
 
 **If code execution is on**, create it with `<script dir>/quiz.py`. `<script dir>` is the folder where the loader skill downloaded this script.
 

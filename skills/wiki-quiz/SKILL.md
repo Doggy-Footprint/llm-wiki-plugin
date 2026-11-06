@@ -27,13 +27,14 @@ Pick the mode from what the user said. If they said nothing, use `review`.
    - L3: apply it to a new case
    - L4: counterexamples, limits, trade-offs
 4. If `misconceptions` holds a recorded misconception, ask a question that touches it **first**.
-5. Ask **follow-up questions only after a wrong answer**. If the answer is right, grade it right away. Give hints only when the user asks or after one wrong answer.
+5. Ask **follow-up questions only after a wrong answer**. If the answer is right, grade it right away. Give hints only when the user asks.
 6. Grading criteria:
-   - `again`: wrong, blank, or repeats a recorded misconception
+   - `again`: wrong, or repeats a recorded misconception
    - `hard`: right only with a hint, or only partly right
    - `good`: explained correctly in their own words
    - `easy`: right and extends it or carries it into another area
-7. When all items are done, show a `제목 → rating` table and **get confirmation**. Do not run `record` before confirmation. If the user corrects anything, apply it.
+   - Not graded: the user does not reply, or replies without attempting an answer to the question (for example, says they do not know, skips it, or changes the subject). Leave the item out of `record`.
+7. When all items are done, show a `제목 → rating` table of the graded items and **get confirmation**. If no item was graded, skip steps 7-8: nothing is recorded. Do not run `record` before confirmation. If the user corrects anything, apply it.
 8. After confirmation, run `record [--date D] <page>=<rating> ...` (the page is the `path` from `due`). This command appends rows to `data/reviews.csv` and rebuilds `chat/deck.md`.
 9. For concepts graded `again`, suggest studying them with `/wiki-learn` or `/wiki-add`. Grading does not edit pages.
 
@@ -50,10 +51,10 @@ Practice with pages the user picks or with the `due` list. Questions and grading
 
 ## 4. Commit
 
-Do this only when `root` is a git repository and `sync` or `record` changed something (check with `git status --porcelain data/reviews.csv chat wiki`).
+Do this only when `root` is a git repository and `record` ran in this session, that is, the user answered at least one quiz question (right or wrong). Do not commit when the user received questions but did not answer them or did not attempt an answer, nor for explore or cram; changes left by `sync` alone are committed later by `/daily`.
 
 1. `git add data/reviews.csv chat/`, plus, if `sync` imported `.learn.md` files, the pages in its `learn` list and `wiki/index.md` and `wiki/log.md`. Do not use `git add -A`.
 2. `git commit -m "quiz: <date> <개수>개 복습"`. If the repository's rules require `Request:`/`Intent:` lines, add them.
 3. Do not push. In a cloud session, follow (k) of `../wiki-add/SKILL.md`.
 
-If nothing changed, do not commit. Finally, briefly report the rating for each title.
+Finally, briefly report the rating for each graded title.
