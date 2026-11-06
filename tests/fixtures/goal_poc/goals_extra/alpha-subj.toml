@@ -1,0 +1,18 @@
+id = "alpha-subj"
+title = "내 DB 공부 목표"
+kind = "subjective"
+
+[[areas]]
+id = "main"
+name = "핵심"
+weight = 1
+
+[[concepts]]
+id = "wf"
+name = "윈도우 함수"
+area = "main"
+
+[[concepts]]
+id = "tx"
+name = "트랜잭션"
+area = "main"

@@ -1,0 +1,62 @@
+id = "sqld-fixture"
+title = "SQLD 픽스처"
+kind = "official"
+
+[source]
+name = "fixture"
+url = "https://example.invalid/sqld"
+
+[[areas]]
+id = "modeling"
+name = "데이터 모델링의 이해"
+weight = 10
+
+[[areas]]
+id = "sql"
+name = "SQL 기본 및 활용"
+weight = 40
+
+[[concepts]]
+id = "normalization"
+name = "정규화"
+area = "modeling"
+aliases = ["normalization"]
+section = "데이터 모델과 성능"
+
+[[concepts]]
+id = "join"
+name = "조인"
+area = "sql"
+aliases = ["join"]
+
+[[concepts]]
+id = "window-function"
+name = "윈도우 함수"
+area = "sql"
+aliases = ["window function"]
+
+[[concepts]]
+id = "subquery"
+name = "서브쿼리"
+area = "sql"
+aliases = ["subquery"]
+
+[[concepts]]
+id = "group-by"
+name = "GROUP BY"
+area = "sql"
+
+[[prereqs]]
+from = "join"
+to = "subquery"
+basis = "syllabus-order"
+
+[[prereqs]]
+from = "join"
+to = "window-function"
+basis = "official"
+
+[[prereqs]]
+from = "group-by"
+to = "window-function"
+basis = "inferred"

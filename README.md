@@ -53,9 +53,21 @@ claude.ai 채팅은 위키 저장소에 접근할 수 있을 때 아래 두 경�
 - `chat/deck.md`: `quiz.py deck`(`record`·`sync`도 갱신)이 만드는 요약 카드 모음. 채팅은 위키 상태를 이 파일로만 읽는다. 구간마다 개수가 제한된다 (due 10, frontier 10).
 - `chat/inbox/`: 채팅이 결과 파일(`*.quiz.md`, `*.learn.md`)을 커밋하는 곳. `quiz.py sync`가 가져와 `data/reviews.csv`나 개념 페이지에 반영하고 지운다. 가져오기에 실패한 파일은 남는다. 이 폴더는 git에 추적되어야 한다 (`.gitkeep`).
 
+## wiki-goal: 학습 목표를 목표 지도로
+
+```
+/llm-wiki:wiki-goal SQLD 합격
+/llm-wiki:wiki-goal 조인과 집계 쿼리를 혼자 짤 수 있게
+```
+
+목표를 듣고 기존 목표와 합칠지 나눌지 정한 뒤, 영역(비중)·개념·선수 관계가 있는 목표 지도 `goals/<id>.toml`을 만든다 (형식은 `skills/wiki-goal/example.toml`). 쓰기 전에 확인을 받고 `goal.py check`로 검증한다. 위키에 노트가 있으면 `suggest`가 개념마다 후보 노트를 찾고, 사용자가 맞다고 한 것만 `data/goal_links.csv`에 기록한다. 끝에 `start`가 지금 공부할 개념을 추천한다.
+
+- 노트 검색은 SQLite 키워드 색인(`<root>/.cache/`)이다. `OPENAI_API_KEY`(환경 변수나 위키 root의 `.env`)가 있으면 임베딩 검색을 더한다. 모델과 차원은 위키 root `config.toml`의 `[embedding]`(`model`, `dim`)으로 바꾼다.
+- `goal.py`의 하위명령: `list`, `check`, `suggest`, `confirm`, `reject`, `coverage`, `start`, `overlap`. `index.py`는 `build`, `embed`, `search`, `plist`(macOS launchd로 매일 색인·임베딩, 출력에 이 파일의 절대 경로가 들어가므로 플러그인을 업데이트하면 다시 만든다).
+
 ## Claude 앱 Code 탭 (클라우드 세션)
 
-클라우드 세션은 플러그인을 설치하지 않고 저장소의 `.claude/skills/`만 읽는다. 위키 저장소에 이 플러그인의 `skills/wiki-add/`, `skills/wiki-learn/`, `skills/wiki-quiz/`를 `.claude/skills/` 아래로 복사해 커밋해 두면 `/wiki-add`, `/wiki-learn`, `/wiki-quiz`가 동작한다.
+클라우드 세션은 플러그인을 설치하지 않고 저장소의 `.claude/skills/`만 읽는다. 위키 저장소에 이 플러그인의 `skills/wiki-add/`, `skills/wiki-learn/`, `skills/wiki-quiz/`, `skills/wiki-goal/`을 `.claude/skills/` 아래로 복사해 커밋해 두면 `/wiki-add`, `/wiki-learn`, `/wiki-quiz`, `/wiki-goal`이 동작한다.
 
 - 결과를 기본 브랜치에 바로 올리려면 저장소 root에 `llm-wiki.toml`을 둔다. 없으면 세션 브랜치에 push한다.
   ```toml
@@ -67,27 +79,27 @@ claude.ai 채팅은 위키 저장소에 접근할 수 있을 때 아래 두 경�
 
 ## claude.ai 채팅 (웹·모바일)
 
-claude.ai에는 도구마다 로더 skill을 하나씩 올린다: `wiki-add`, `wiki-learn`, `wiki-quiz`. 로더에는 지시가 없고, 쓸 때마다 이 저장소 `main`의 `skills/<도구>/claude-ai.md`를 읽어 그대로 따른다. 그래서 지시를 고쳐도 이 저장소에 반영되면 다시 올릴 필요가 없다.
+claude.ai에는 도구마다 로더 skill을 하나씩 올린다: `wiki-add`, `wiki-goal`, `wiki-learn`, `wiki-quiz`. 로더에는 지시가 없고, 쓸 때마다 이 저장소 `main`의 `skills/<도구>/claude-ai.md`를 읽어 그대로 따른다. 그래서 지시를 고쳐도 이 저장소에 반영되면 다시 올릴 필요가 없다.
 
-1. [Releases](https://github.com/Doggy-Footprint/llm-wiki-plugin/releases)에서 `wiki-add.zip`, `wiki-learn.zip`, `wiki-quiz.zip`을 받는다 (직접 만들려면 `python scripts/build_zip.py`, 출력은 `dist/<도구>.zip`).
-2. PC 웹 claude.ai의 Settings → Capabilities(또는 Skills)에서 zip 세 개를 하나씩 업로드한다. 예전에 올린 `llm-wiki` 로더는 지운다 (같은 요청에 둘 다 반응한다). 업로드한 skill은 모바일 앱에서도 쓸 수 있다.
-3. 채팅에서 "/wiki-add 주제", "/wiki-learn", "이 뉴스레터로 공부하자", "/wiki-quiz"처럼 말한다. 로더에 적힌 위키 저장소(`Doggy-Footprint/LLM-wiki`)의 `chat/deck.md`를 읽고 `chat/inbox/`에 커밋한다. 다른 위키 저장소를 쓰려면 프롬프트에 적거나 로더의 3절을 고친다.
+1. [Releases](https://github.com/Doggy-Footprint/llm-wiki-plugin/releases)에서 `wiki-add.zip`, `wiki-goal.zip`, `wiki-learn.zip`, `wiki-quiz.zip`을 받는다 (직접 만들려면 `python scripts/build_zip.py`, 출력은 `dist/<도구>.zip`).
+2. PC 웹 claude.ai의 Settings → Capabilities(또는 Skills)에서 zip 네 개를 하나씩 업로드한다. 예전에 올린 `llm-wiki` 로더는 지운다 (같은 요청에 둘 다 반응한다). 업로드한 skill은 모바일 앱에서도 쓸 수 있다.
+3. 채팅에서 "/wiki-add 주제", "/wiki-learn", "이 뉴스레터로 공부하자", "/wiki-quiz", "/wiki-goal SQLD 준비"처럼 말한다. 로더에 적힌 위키 저장소(`Doggy-Footprint/LLM-wiki`)의 `chat/deck.md`를 읽고 `chat/inbox/`에 커밋한다. wiki-goal은 `goals/` 목록만 읽고 검증한 `goals/<id>.toml`을 기본 브랜치에 바로 커밋한다. 노트 연결(`suggest`)은 채팅에서 하지 않으므로 Claude Code에서 `/wiki-goal <id> 노트 연결`로 한다. 다른 위키 저장소를 쓰려면 프롬프트에 적거나 로더의 3절을 고친다.
 4. 결과 파일은 `chat/inbox/`에 커밋되거나, 커밋할 수 없으면 내려받게 한다. Claude Code에서 `/wiki-add import <파일>`이나 `quiz.py sync`로 가져온다.
 
 - 지시 파일은 GitHub 연결로 읽고, 안 되면 `raw.githubusercontent.com`에서 읽는다. 둘 다 안 되면 멈춘다.
-- 코드 실행이 켜져 있으면 로더가 그 도구의 스크립트(`learn.py`, `quiz.py`)를 `raw.githubusercontent.com`에서 내려받아 결과 파일을 만든다. 코드 실행이 꺼져 있거나 네트워크가 막혀 내려받지 못하면 같은 형식의 텍스트를 직접 쓴다.
+- 코드 실행이 켜져 있으면 로더가 그 도구의 스크립트(`learn.py`, `quiz.py`, `goal.py`와 `index.py`)를 `raw.githubusercontent.com`에서 내려받아 결과 파일을 만든다. 코드 실행이 꺼져 있거나 네트워크가 막혀 내려받지 못하면 같은 형식의 텍스트를 직접 쓴다.
 - 새 도구를 추가할 때: `skills/<도구>/claude-ai.md`와 로더 `claude-ai/<도구>/SKILL.md`를 쓴다. 테스트가 두 목록이 맞는지 확인한다. 새 도구의 zip은 한 번 올려야 한다.
 - 로더(`claude-ai/<도구>/SKILL.md`)나 그 description을 바꿨을 때만 그 도구의 zip을 다시 올린다.
 
 ## 개발
 
 ```
-PYTHONPATH=skills/wiki-add:skills/wiki-quiz:scripts uv run --no-project --with pytest --with pytest-cov \
+PYTHONPATH=skills/wiki-add:skills/wiki-quiz:skills/wiki-goal:scripts uv run --no-project --with pytest --with pytest-cov \
   --with 'markitdown[pdf,docx,pptx]==0.1.9' --with fsrs==6.3.2 \
-  python -m pytest tests --cov=learn --cov=quiz --cov=build_zip --cov-branch --cov-fail-under=90
+  python -m pytest tests --cov=learn --cov=quiz --cov=build_zip --cov=goal --cov=index --cov-branch --cov-fail-under=90
 ```
 
-main에 push하면 GitHub Actions가 테스트를 돌리고, `plugin.json`의 `version`에 해당하는 `v<version>` 태그가 없을 때만 로더 zip(`wiki-add.zip`, `wiki-learn.zip`, `wiki-quiz.zip`)을 Release로 올린다. claude.ai는 지시를 `main`에서 바로 읽으므로 지시만 바뀐 변경은 버전을 올리지 않아도 반영된다.
+main에 push하면 GitHub Actions가 테스트를 돌리고, `plugin.json`의 `version`에 해당하는 `v<version>` 태그가 없을 때만 로더 zip(`wiki-add.zip`, `wiki-goal.zip`, `wiki-learn.zip`, `wiki-quiz.zip`)을 Release로 올린다. claude.ai는 지시를 `main`에서 바로 읽으므로 지시만 바뀐 변경은 버전을 올리지 않아도 반영된다.
 
 ## 라이선스
 
