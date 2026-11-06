@@ -84,7 +84,7 @@ claude.ai 채팅은 위키 저장소에 접근할 수 있을 때 아래 두 경�
 
 클라우드 세션은 플러그인을 설치하지 않고 저장소의 `.claude/skills/`만 읽는다. 위키 저장소에 이 플러그인의 `skills/wiki-add/`, `skills/wiki-learn/`, `skills/wiki-quiz/`, `skills/wiki-goal/`, `skills/wiki-insight/`을 `.claude/skills/` 아래로 복사해 커밋해 두면 `/wiki-add`, `/wiki-learn`, `/wiki-quiz`, `/wiki-goal`, `/wiki-insight`가 동작한다.
 
-모든 wiki- skill은 `disable-model-invocation: true`라서 사용자가 `/wiki-…`로 부를 때만 실행되고, 에이전트에게는 보이지 않는다.
+플러그인의 SKILL.md frontmatter는 `name`과 `description`만 둔다. claude.ai가 `disable-model-invocation` 같은 다른 키가 있는 플러그인을 설치하지 않았기 때문이다. 사용자가 `/wiki-…`로 부를 때만 실행되게 하려면, 위키 저장소에 복사한 `.claude/skills/<도구>/SKILL.md`의 frontmatter에 `disable-model-invocation: true`를 더한다.
 
 - 결과를 기본 브랜치에 바로 올리려면 저장소 root에 `llm-wiki.toml`을 둔다. 없으면 세션 브랜치에 push한다.
   ```toml
@@ -100,7 +100,7 @@ claude.ai에도 플러그인으로 설치한다. 마켓플레이스 [`Doggy-Foot
 
 1. PC 웹 claude.ai의 Customize → Plugins → Add → Add marketplace에 `Doggy-Footprint/claude-plugins`를 넣고, **Sync automatically**를 켠다.
 2. 목록에서 `llm-wiki`를 설치한다. 예전에 Customize → Skills에 올린 `wiki-add`, `wiki-goal`, `wiki-insight`, `wiki-learn`, `wiki-quiz` 로더는 지운다 (같은 요청에 둘 다 반응한다). 설치한 플러그인은 모바일 앱과 Claude Code(`llm-wiki@synced`)에도 들어온다.
-3. 설정에서 코드 실행을 켠다. 채팅에서 `/`를 눌러 `wiki-add`, `wiki-learn`, `wiki-quiz`, `wiki-goal`, `wiki-insight`를 고른다. skill이 모두 `disable-model-invocation: true`라서 Claude가 알아서 부르지 않는다.
+3. 설정에서 코드 실행을 켠다. 채팅에서 `/`를 눌러 `wiki-add`, `wiki-learn`, `wiki-quiz`, `wiki-goal`, `wiki-insight`를 고른다. 요청이 description과 맞으면 Claude가 알아서 부를 수도 있다.
 4. 각 skill의 `SKILL.md`는 claude.ai 채팅이면 같은 폴더의 `claude-ai.md`만 따르게 한다. 위키 저장소는 프롬프트에 적은 저장소, 없으면 `Doggy-Footprint/LLM-wiki`(기본 브랜치 `master`)다. 그 저장소의 `chat/deck.md`(wiki-learn, wiki-quiz)나 `chat/insights.md`(wiki-insight)를 읽고 `chat/inbox/`에 커밋한다. wiki-goal은 `goals/` 목록만 읽고 검증한 `goals/<id>.toml`을 기본 브랜치에 바로 커밋한다. 노트 연결(`suggest`)은 채팅에서 하지 않으므로 Claude Code에서 `/wiki-goal <id> 노트 연결`로 한다.
 5. 결과 파일은 `chat/inbox/`에 커밋되거나, 커밋할 수 없으면 내려받게 한다. Claude Code에서 `/wiki-add import <파일>`, `/wiki-insight import <파일>`, `quiz.py sync`, `insight.py sync`로 가져온다.
 
