@@ -1,6 +1,6 @@
 ---
 name: wiki-goal
-description: Set learning goals for the personal LLM wiki in claude.ai chat. Turn the stated goals into goal maps (weighted areas, concepts, prerequisites), decide whether they become one map, several maps, or an addition to an existing map, validate them, and commit goals/<id>.toml to the wiki repository. Instructions are read from GitHub at run time. Use for requests like "/wiki-goal", "set a study goal", "I want to prepare for <exam>", or "plan what to study for X".
+description: Set learning goals for the personal LLM wiki in claude.ai chat. Turn the stated goals into goal maps (weighted areas, concepts, prerequisites), decide whether they become one map, several maps, or an addition to an existing map, validate them, and commit each map as a TOML file under goals/ in the wiki repository. Instructions are read from GitHub at run time. Use for requests like "/wiki-goal", "set a study goal", "I want to prepare for an exam", or "plan what to study for X".
 ---
 
 # wiki-goal 로더
