@@ -147,9 +147,6 @@ class OpenAIEmbedder:
 
 
 class CommandEmbedder:
-    """stdin으로 {"model", "dim", "texts"} JSON을 받아 stdout에 {"vectors": [...]} JSON을 쓰는 명령을 호출마다 한 번 실행한다.
-    로컬 모델은 의존성이 커서 이 파일(표준 라이브러리만)에 넣지 않고 별도 프로세스로 돌린다."""
-
     def __init__(self, model: str, dim: int, argv: list[str], cwd: Path):
         self.model = model
         self.dim = dim
