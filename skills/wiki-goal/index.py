@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Protocol
 
 EMBED_URL = "https://api.openai.com/v1/embeddings"
+COMMAND_TIMEOUT = 900
 TEXT_LIMIT = 8000
 BATCH = 64
 TOP = 50
@@ -145,6 +146,38 @@ class OpenAIEmbedder:
             raise IndexToolError("OpenAI response malformed") from None
 
 
+class CommandEmbedder:
+    """stdin으로 {"model", "dim", "texts"} JSON을 받아 stdout에 {"vectors": [...]} JSON을 쓰는 명령을 호출마다 한 번 실행한다.
+    로컬 모델은 의존성이 커서 이 파일(표준 라이브러리만)에 넣지 않고 별도 프로세스로 돌린다."""
+
+    def __init__(self, model: str, dim: int, argv: list[str], cwd: Path):
+        self.model = model
+        self.dim = dim
+        self._argv = argv
+        self._cwd = cwd
+
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        body = json.dumps({"model": self.model, "dim": self.dim, "texts": texts}, ensure_ascii=False)
+        try:
+            proc = subprocess.run(
+                self._argv, input=body, capture_output=True, text=True, timeout=COMMAND_TIMEOUT, cwd=self._cwd
+            )
+        except subprocess.TimeoutExpired:
+            raise IndexToolError(f"embed command timed out after {COMMAND_TIMEOUT}s") from None
+        except OSError as e:
+            raise IndexToolError(f"embed command failed to start: {type(e).__name__}") from None
+        if proc.returncode != 0:
+            last = (proc.stderr.strip().splitlines() or [""])[-1][:200]
+            raise IndexToolError(f"embed command exit {proc.returncode}: {last}")
+        try:
+            vectors = json.loads(proc.stdout)["vectors"]
+            if not isinstance(vectors, list):
+                raise TypeError
+            return vectors
+        except (ValueError, KeyError, TypeError):
+            raise IndexToolError("embed command output malformed") from None
+
+
 def api_key(root: Path, environ: Mapping[str, str]) -> str | None:
     value = environ.get("OPENAI_API_KEY")
     if value:
@@ -165,7 +198,7 @@ def api_key(root: Path, environ: Mapping[str, str]) -> str | None:
 
 
 def embedding_config(root: Path) -> dict:
-    cfg = {"model": "text-embedding-3-small", "dim": 768, "min_free_mb": 0}
+    cfg = {"model": "text-embedding-3-small", "dim": 768, "min_free_mb": 0, "command": None}
     path = Path(root) / "config.toml"
     if not path.is_file():
         return cfg
@@ -520,10 +553,17 @@ def resolve_embedder(
 ) -> tuple[Embedder | None, list[str]]:
     if embedder is not None:
         return embedder, []
+    cfg = embedding_config(root)
+    if cfg["command"] is not None:
+        argv = cfg["command"]
+        if not isinstance(argv, list) or not argv or not all(isinstance(a, str) and a for a in argv):
+            raise IndexToolError("config.toml: [embedding] command must be a non-empty list of strings")
+        if "/" in argv[0] and not Path(argv[0]).is_absolute():
+            argv = [str(Path(root) / argv[0]), *argv[1:]]
+        return CommandEmbedder(cfg["model"], cfg["dim"], argv, Path(root)), []
     key = api_key(root, environ)
     if key is None:
         return None, ["vector search disabled: OPENAI_API_KEY not set"]
-    cfg = embedding_config(root)
     return OpenAIEmbedder(cfg["model"], cfg["dim"], key), []
 
 
