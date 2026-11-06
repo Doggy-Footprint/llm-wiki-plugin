@@ -1,9 +1,16 @@
 ---
 name: wiki-add
-description: Study a keyword, file, or URL through dialogue. Ask diagnostic questions to gauge understanding on the SOLO scale (0-4), teach at that level, then record the level, evidence, and misconceptions on the wiki concept page. Use for requests like "/wiki-add keyword", "/wiki-add file path or URL", "let's study this", "explain this and record my understanding level", or "/wiki-add import result file" (importing a result file made in claude.ai chat).
+description: Study a keyword, file, or URL, or take in a short piece of knowledge the user just learned (a sentence or two from a lecture or article), through dialogue. Ask diagnostic questions to gauge understanding on the SOLO scale (0-4), teach at that level, then record the level, evidence, and misconceptions on the wiki concept page. Use for requests like "/wiki-add keyword", "/wiki-add file path or URL", "/wiki-add followed by a sentence the user learned", "let's study this", "I learned this today, put it in the wiki", "explain this and record my understanding level", or "/wiki-add import result file" (importing a result file made in claude.ai chat).
 ---
 
-# wiki-add: 대화하며 공부하고 이해 수준을 위키에 기록
+# wiki-add: 아는 것을 대화로 확인하고 이해 수준과 함께 위키에 기록
+
+이 skill은 사용자가 어떤 개념을 **얼마나** 아는지를 개념 페이지에 남긴다. 입력은 셋 중 하나다.
+- 키워드: 공부할 주제 이름.
+- 자료: 파일 경로나 `http(s)://` URL.
+- 단편 지식: 사용자가 이미 배운 한두 문장. 들은 사실과 거기서 끌어낸 자기 추론이 섞여 있을 수 있다.
+
+입력이 무엇이든 흐름은 같다. 시작점 찾기 → 진단 → 수준 판정 → 수준별 대화 → 확인 → 기록. 입력 종류가 바꾸는 것은 진단을 어디서 시작하느냐뿐이다. 단편 지식은 사용자가 이미 한 첫 답변으로 보고, 그 문장이 보여 주지 못한 부분만 묻는다.
 
 도구는 `uv run "<skill 폴더>/learn.py" <하위명령> ...`이다. `<skill 폴더>`는 이 skill이 로드될 때 Claude Code가 알려 주는 "Base directory"다. 출력은 JSON 한 줄이고, 실패하면 stderr 메시지와 종료 코드(2 잘못된 입력, 3 변환·내려받기 실패)를 준다.
 
@@ -21,21 +28,29 @@ description: Study a keyword, file, or URL through dialogue. Ask diagnostic ques
 
 인자가 `import <파일>`이면 대화 없이 `import <파일>`만 실행하고 결과(`page`, `created`, `level`, `sections_added`, `changed`)를 보고한다. 그다음 (k)로 간다.
 
-## (b) 자료 가져오기
+## (b) 입력 읽기
 
-인자가 파일 경로나 `http(s)://` URL이면 `fetch <자료> --date today --slug <짧은-이름>`을 실행한다. 키워드면 건너뛴다.
-- 반환값에는 본문이 없다. `md` 파일을 **한 번만** 읽는다. `outline`이 null이 아니면(길다) 목차만 보고 필요한 구간만 `offset`/`limit`으로 읽는다. 다시 읽지 않는다.
-- `duplicate_of`가 있으면 이미 가져온 자료다. 새로 만들지 않았으니 반환된 `md`를 읽는다. 사용자가 새 버전을 올렸다고 하면 그 사실을 알린다.
-- 코드 2는 경로·주소 오류, 3은 변환 실패다. 메시지를 그대로 알리고 중단한다.
-- `mode`가 `cloud`인데 URL이 코드 3으로 실패하면 이렇게 안내한다. "환경 네트워크를 Full 또는 Custom으로 바꾸거나, 본문을 붙여 넣어 주세요." 붙여 넣은 본문은 자료로 쓰되 `sources`에는 넣지 않는다.
+- **자료**(파일 경로, URL): `fetch <자료> --date today --slug <짧은-이름>`을 실행한다.
+  - 반환값에는 본문이 없다. `md` 파일을 **한 번만** 읽는다. `outline`이 null이 아니면(길다) 목차만 보고 필요한 구간만 `offset`/`limit`으로 읽는다. 다시 읽지 않는다.
+  - `duplicate_of`가 있으면 이미 가져온 자료다. 새로 만들지 않았으니 반환된 `md`를 읽는다. 사용자가 새 버전을 올렸다고 하면 그 사실을 알린다.
+  - 코드 2는 경로·주소 오류, 3은 변환 실패다. 메시지를 그대로 알리고 중단한다.
+  - `mode`가 `cloud`인데 URL이 코드 3으로 실패하면 이렇게 안내한다. "환경 네트워크를 Full 또는 Custom으로 바꾸거나, 본문을 붙여 넣어 주세요." 붙여 넣은 본문은 자료로 쓰되 `sources`에는 넣지 않는다.
+- **키워드**: 읽을 것이 없다. (c)로 간다.
+- **단편 지식**: `fetch`하지 않는다. 문장을 주장 단위로 나누고 각각을 둘 중 하나로 표시한다.
+  - 들은 것: 강의·글이 말한 사실. 출처를 함께 적어 둔다. 사용자가 말하지 않았으면 한 번 묻고, 모른다고 하면 비워 둔다.
+  - 내 추론: 사용자가 그 사실에서 끌어낸 결론, 예측, 다른 영역으로 넓힌 말.
+
+  나눈 결과를 한 줄씩 보여 주고 맞는지 확인받는다. 이 구분은 (e)의 판정과 (h)의 본문에 그대로 쓴다.
 
 ## (c) 시작점 찾기
 
 `related <키워드 또는 제목> [--limit 3]`을 실행한다. 상위 최대 3개만 열어 기존 `level`, `## 이해 기록`, `## 오해와 교정`을 읽고 그것을 시작점으로 삼는다. 같은 개념의 페이지가 있으면 그 제목을 `record`에 그대로 쓴다. 없으면 새 페이지다.
 
+단편 지식이면 문장의 핵심 개념 이름으로 찾는다. 페이지 제목은 개념 이름이지 문장이 아니다. 단편은 대개 이미 있는 개념의 한 조각이므로, 같은 개념의 페이지가 있으면 새로 만들지 않고 거기에 합친다. 한 문장이 두 개념에 걸치면 주된 개념 하나에 기록하고 다른 개념은 (h)의 `## 연결`에 둔다.
+
 ## (d) 진단 질문
 
-설명하기 전에 질문 2~4개를 **하나씩** 던진다. 개정 Bloom 순서로 올라간다. 기억 → 이해 → 적용 → 분석.
+설명하기 전에 질문을 **하나씩** 던진다. 개정 Bloom 순서로 올라간다. 기억 → 이해 → 적용 → 분석.
 - 기억: "X가 뭔지 아는 대로 말해 줘."
 - 이해: "X를 처음 듣는 친구에게 자기 말로 설명해 본다면?"
 - 적용: "이런 상황이면 X를 어떻게 쓰겠어?"
@@ -43,9 +58,13 @@ description: Study a keyword, file, or URL through dialogue. Ask diagnostic ques
 
 먼저 자기 말로 설명하게 하고, 틀려도 답을 바로 알려 주지 않는다. 앞 답이 막히면 더 올라가지 않고 멈춘다. 기존 페이지가 있으면 이미 확인된 수준 아래 질문은 건너뛴다.
 
+질문 수는 입력에 따라 다르다.
+- 키워드·자료: 2~4개.
+- 단편 지식: 1~2개. 단편 자체를 첫 답변으로 치고, 그 문장이 이미 보여 준 단계는 다시 묻지 않는다. 사실 하나만 말했으면 "왜 그렇지?"(이해)를 묻는다. 원인과 결과를 이었으면 적용이나 반례(분석)를 묻는다. 특히 "내 추론"이 어디서 깨질 수 있는지를 묻는다. 강의 문장을 그대로 옮긴 것으로 보이면 먼저 자기 말로 다시 설명해 달라고 한다.
+
 ## (e) 수준 판정
 
-수준은 "나는 안다"는 자기평가가 아니라 **답변의 구조**로 판정한다 (SOLO).
+수준은 "나는 안다"는 자기평가가 아니라 **답변의 구조**로 판정한다 (SOLO). 단편 지식도 답변으로 보고 같은 표로 판정한다. 단 강의 문장을 그대로 옮긴 말은 기억(L1)의 근거로만 쓰고, 자기 말로 다시 설명하거나 적용한 답이 있어야 그 이상으로 올린다.
 
 | level | 이름 | 답변에서 보이는 신호 |
 |---|---|---|
@@ -57,6 +76,8 @@ description: Study a keyword, file, or URL through dialogue. Ask diagnostic ques
 
 근거는 사용자가 실제로 한 말에서 한 줄로 뽑는다. 판단이 갈리면 낮은 쪽을 택하고 확인 질문을 하나 더 한다.
 
+"들은 것"이 사실과 다르거나 "내 추론"이 지나치게 일반화됐으면 오개념 후보로 기억해 두고 (f)에서 짚는다. 단편이라고 옳다고 가정하지 않는다.
+
 ## (f) 수준별 대화
 
 - L0~1: 직관과 구체적 예시부터. 모자란 선수 개념을 한두 개 짚고 하나씩 설명한다.
@@ -66,11 +87,12 @@ description: Study a keyword, file, or URL through dialogue. Ask diagnostic ques
 - 오개념은 발견 즉시 짚고, 왜 그렇게 생각했을지 묻고 바로잡는다. 기억해 두었다가 (g)에 쓴다.
 - 대화 중에 사용자가 수준에 맞는 답을 하면 다음 단계로 올린다. 한 번에 한 가지씩.
 - 다음 학습 후보를 기억해 둔다. 대화에 나왔지만 사용자가 자기 말로 설명하지 못한 개념(덜 이해함)과, 이 개념을 이해한 뒤 이어서 볼 만한 개념(이어서)이다. 지금 다루지 않는 개념은 길게 설명하지 않고 후보로만 남긴다.
+- 단편 지식이면 사용자는 대개 빠르게 남기기를 원한다. 오개념 교정과 수준 확인에 필요한 만큼만 대화하고, 더 공부할지는 사용자에게 묻는다. 더 하지 않으면 남은 것은 다음 학습 후보로 넘긴다.
 
 ## (g) 재판정과 확인
 
 끝에 수준을 다시 판정한다. 그리고 **쓰기 전에** 아래를 보여 주고 확인을 받는다. 확인 전에는 `record`를 실행하지 않는다.
-- 페이지 제목, 이전 level → 새 level (SOLO 이름)
+- 페이지 제목(기존 페이지에 합치는지, 새 페이지인지), 이전 level → 새 level (SOLO 이름)
 - 근거 한 줄, 오개념과 교정 (있을 때), 요약 한 문장(새 페이지일 때)
 - 페이지에 들어갈 "내가 정리한 것"과 "보충 (LLM)" 요지, 새로 만들 연결
 - 다음 학습 항목 (덜 이해함 / 이어서, 각각 이유 한 구절)
@@ -80,10 +102,11 @@ description: Study a keyword, file, or URL through dialogue. Ask diagnostic ques
 ## (h) 본문 작성 규칙
 
 `record`가 알려 준 `page`를 열어 아래 규칙으로 채운다. `level`, `## 이해 기록`, `## 오해와 교정`은 직접 고치지 않는다 (`learn.py`만 쓴다).
-- `## 내가 정리한 것`: 사용자가 말했거나 자료에 있는 내용만. 내 지식을 섞지 않는다.
+- `## 내가 정리한 것`: 사용자가 말했거나 자료에 있는 내용만. 내 지식을 섞지 않는다. 단편 지식은 (b)의 구분을 살려 "내 추론"인 문장 끝에 `(내 추론)`을 붙인다. 기존 페이지에 합칠 때는 문장을 뒤에 덧붙이기만 하지 않는다. 같은 말은 하나로 합치고, 기존 내용과 이어지도록 섹션을 다시 정리한다. 기존 내용과 모순되면 지우지 말고 표시한 뒤 사용자에게 알린다.
 - `## 보충 (LLM)`: 내 지식. 판정한 수준에 맞는 어휘와 깊이로 쓴다.
 - 페이지가 없는 선수 개념은 `## 연결`에 `[[개념]] — 관계`로 링크만 적는다. 그 개념의 페이지는 사용자가 동의할 때만 만든다 (같은 절차로 `record`).
 - `## 다음 학습`: 한 줄에 하나, `- [[개념]] — 덜 이해함: <막힌 지점>` 또는 `- [[개념]] — 이어서: <다음에 볼 이유>`. 5줄 이내로 쓰고, 이번 대화에서 해결된 기존 항목은 지운다. 페이지가 없는 항목은 `/wiki-quiz explore`의 후보가 된다.
+- `## 출처`: `raw/` 파일이 없는 출처(강의명과 회차, 글 제목)는 `- <출처> (사용자 말, YYYY-MM-DD)` 한 줄로 적는다.
 - 템플릿 자리표시 줄(괄호 줄)은 내용으로 바꾼다.
 
 ## (i) 기록
@@ -95,7 +118,7 @@ uv run "<skill 폴더>/learn.py" --root <root> record "<제목>" --level N --evi
   [--summary "<한 문장>"] [--misconception "<오개념과 교정>"] [--source <raw/... 경로> ...] [--date D]
 ```
 
-- 새 페이지에는 `--summary`가 필수다. 자료를 가져왔으면 `fetch`가 알려 준 `raw`(또는 `md`)를 `--source`로 준다.
+- 새 페이지에는 `--summary`가 필수다. 자료를 가져왔으면 `fetch`가 알려 준 `raw`(또는 `md`)를 `--source`로 준다. 단편 지식과 키워드에는 `--source`를 주지 않는다. 출처는 (h)대로 본문에 적는다.
 - `changed`가 false면 이미 같은 내용이 있다는 뜻이다. 그대로 알린다.
 - 이후 (h)대로 본문을 채운다. 대화 전문은 저장하지 않는다.
 
