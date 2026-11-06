@@ -18,8 +18,6 @@ from pathlib import Path
 ROLLOVER_HOUR = 5
 AREAS: dict[str, str] = {"life": "## 생활 깨달음 (life/insights/)", "career": "## 커리어 깨달음 (career/insights/)"}
 OLD_HEADING = "## 지난 생각"
-CONFIDENCE = ("hunch", "likely", "tested")
-# tested는 근거에 스크립트·실험 결과가 있어야 하므로 대화만으로 만든 결과 파일에서는 받지 않는다.
 RESULT_CONFIDENCE = ("hunch", "likely")
 CHAT_SOURCE = "claude.ai 채팅"
 DECK_PATH = "chat/insights.md"
@@ -191,7 +189,6 @@ def _append(lines: list[str], heading: str, items: Sequence[str]) -> None:
 
 
 def _write_all(writes: Sequence[tuple[Path, bytes]]) -> None:
-    """검증이 끝난 내용을 한꺼번에 쓰고, 중간에 실패하면 이전 상태로 되돌린다."""
     undo: list[tuple[Path, bytes | None]] = []
     try:
         for path, data in writes:
