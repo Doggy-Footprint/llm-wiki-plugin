@@ -1,6 +1,6 @@
 # Setting learning goals in claude.ai chat
 
-This is the procedure for claude.ai chat. The wiki lives in a GitHub repository; this chat reads only the `goals/` folder there and commits the goal map `goals/<id>.toml` directly. Follow sections (a), (c), and (d) of `skills/wiki-goal/SKILL.md` in this plugin for the decision criteria; the format example is `skills/wiki-goal/example.toml`. Do not follow that file's tool runs (`list`, `suggest`, etc.) or its sections (f) and (g). A `skills/<name>/...` path in this file is a file of this plugin's `<name>` skill; this skill's own files are next to this file, in `<this folder>`.
+This is the procedure for claude.ai chat. The wiki lives in a GitHub repository; this chat reads only the `goals/` folder there and commits the goal map `goals/<id>.toml` directly. Follow sections (b), (d), and (e) of `skills/wiki-goal/SKILL.md` in this plugin for the decision criteria; the format example is `skills/wiki-goal/example.toml`. Do not follow that file's tool runs (`list`, `suggest`, etc.) or its sections (a), (g), and (h). A `skills/<name>/...` path in this file is a file of this plugin's `<name>` skill; this skill's own files are next to this file, in `<this folder>`.
 
 Talk with the user in Korean. Quoted messages below are said to the user as written.
 
@@ -10,12 +10,12 @@ Use the repository named in the user's prompt; if none, the GitHub repository `D
 
 ## 1. Hear the goal and check existing goals
 
-- Hear the goal, completion criterion, and deadline/priority as in section (a) of `skills/wiki-goal/SKILL.md`.
+- Hear the goal, completion criterion, and deadline/priority as in section (b) of `skills/wiki-goal/SKILL.md`.
 - Through the GitHub connection, look only at the file list of the repository's `goals/` folder. Open only files whose names (`<id>.toml`) look like they overlap the new goal, and check their title, areas, and concepts. Do not open wiki pages (`wiki/`). If the folder cannot be read, tell the user that existing goals are unknown and continue.
 
 ## 2. Merge or split, and draft
 
-Decide and draft as in sections (c) and (d) of `skills/wiki-goal/SKILL.md`. Verify official sources on the web. Before writing, show the summary from section (d) and **get confirmation**. Do not create a file before confirmation. When editing an existing map, do not change the `id` of existing concepts.
+Decide and draft as in sections (d) and (e) of `skills/wiki-goal/SKILL.md`. Verify official sources on the web. Before writing, show the summary from section (e) and **get confirmation**. Do not create a file before confirmation. When editing an existing map, do not change the `id` of existing concepts.
 
 ## 3. Validate
 
