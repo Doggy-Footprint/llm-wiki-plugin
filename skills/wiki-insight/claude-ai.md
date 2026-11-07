@@ -1,6 +1,6 @@
 # Keeping an insight in claude.ai chat
 
-This is the procedure for claude.ai chat. The wiki lives in a GitHub repository; this chat reads only `chat/insights.md` there and uploads one result file to `chat/inbox/`. The wiki applies it later (`insight.py sync`). Read `skills/wiki-insight/SKILL.md` in this plugin for what an insight page is; do not follow its tool runs or its sections (a), (c), and (e). A `skills/<name>/...` path in this file is a file of this plugin's `<name>` skill; this skill's own files are next to this file, in `<this folder>`.
+This is the procedure for claude.ai chat. The wiki lives in a GitHub repository; this chat reads only `chat/insights.md` there and uploads one result file to `chat/inbox/`. The wiki applies it later (`insight.py sync`). Read `skills/wiki-insight/SKILL.md` in this plugin for what an insight page is; do not follow its tool runs or its sections (a), (b), (d), and (f). A `skills/<name>/...` path in this file is a file of this plugin's `<name>` skill; this skill's own files are next to this file, in `<this folder>`.
 
 Talk with the user in Korean and write the result file in Korean. Korean headings and quoted phrases below are literal strings that the import script uses; write them exactly as given.
 
@@ -10,7 +10,7 @@ Use the repository named in the user's prompt; if none, the GitHub repository `D
 
 ## 1. Hear the realization
 
-Follow (b) of `skills/wiki-insight/SKILL.md`: take the realization from the prompt or ask once, stop if it is only an event or a fact, and keep the user's sentence verbatim.
+Follow (c) of `skills/wiki-insight/SKILL.md`: take the realization from the prompt or ask once, stop if it is only an event or a fact, and keep the user's sentence verbatim.
 
 ## 2. Find the same question
 

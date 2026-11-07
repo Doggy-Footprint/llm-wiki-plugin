@@ -6,17 +6,21 @@ disable-model-invocation: true
 
 # wiki-quiz: review quizzes and new-concept exploration
 
-The tool is `uv run "<skill dir>/quiz.py" --root <root> <subcommand> ...` (`<skill dir>` is the "Base directory" Claude Code reports when this skill loads). Output is one line of JSON; on failure it prints a message to stderr and exits with code 2. For `root`, use the `root` from `uv run "<skill dir>/../wiki-add/learn.py" env` (the git top level if the add skill is absent). If `mode` is `chat` or this is a claude.ai chat, do not follow this file; follow only `claude-ai.md`.
-
 Talk with the user in Korean.
 
 Keep token cost down. **Do not open** pages. The only content a question may use is the summary, 내가 정리한 것, misconceptions, and links that `card` returns. `data/reviews.csv` decides the review schedule. Reviewing and grading write nothing to pages; only `sync` imports `.learn.md` results into pages.
 
 ## 0. Start
 
-First run `quiz.py --root <root> sync`. It imports the result files that claude.ai chat uploaded to `chat/inbox/`: `.quiz.md` files go into `data/reviews.csv`, `.learn.md` files are imported into wiki pages through `wiki-add`'s `learn.py` (the `learn` list in the output holds those pages), imported files are deleted from `chat/inbox/`, and `chat/deck.md` is rebuilt. If `failed` in the output is non-empty (exit code 1), tell the user the reasons. It is fine to continue.
+1. Run `uv run "<skill dir>/../wiki-add/learn.py" env` (`python3` if `uv` is missing; `<skill dir>` is the "Base directory" Claude Code reports when this skill loads) and take `mode`, `root`, and `has_wiki`. If the wiki-add skill is not installed alongside, use `git rev-parse --show-toplevel` as `root`, `local` as `mode`, and whether `<root>/wiki/index.md` exists as `has_wiki`.
+2. If `mode` is `chat`, this is a claude.ai chat, or commands cannot run, do not follow this file; follow only `claude-ai.md`.
+3. If `has_wiki` is false, tell the user that `root` holds no wiki and stop. Do not look for a wiki elsewhere.
 
-Pick the mode from what the user said. If they said nothing, use `review`.
+Every command below passes `--root <root>`. The tool is `uv run "<skill dir>/quiz.py" --root <root> <subcommand> ...`. It prints one line of JSON; on failure, a message on stderr and exit code 2.
+
+Then run `quiz.py --root <root> sync`. It imports the result files that claude.ai chat uploaded to `chat/inbox/`: `.quiz.md` files go into `data/reviews.csv`, `.learn.md` files are imported into wiki pages through `wiki-add`'s `learn.py` (the `learn` list in the output holds those pages), imported files are deleted from `chat/inbox/`, and `chat/deck.md` is rebuilt. If `failed` in the output is non-empty (exit code 1), tell the user the reasons. It is fine to continue.
+
+Pick the quiz mode (`review`, `explore`, `cram`) from what the user said. If they said nothing, use `review`.
 
 ## 1. review (default)
 
@@ -56,6 +60,6 @@ Do this only when `root` is a git repository and `record` ran in this session, t
 
 1. `git add data/reviews.csv chat/`, plus, if `sync` imported `.learn.md` files, the pages in its `learn` list and `wiki/index.md` and `wiki/log.md`. Do not use `git add -A`.
 2. `git commit -m "quiz: <date> <개수>개 복습"`. If the repository's rules require `Request:`/`Intent:` lines, add them.
-3. Do not push. In a cloud session, follow (k) of `../wiki-add/SKILL.md`.
+3. If `mode` from 0 is `local`, do not push; if it is `cloud`, push as (k) of `../wiki-add/SKILL.md` says.
 
 Finally, briefly report the rating for each graded title.
