@@ -199,7 +199,7 @@ def test_O16_Y2_plugin_concept_equals_template():
 def test_O16_Y3_plugin_json_fields():
     data = json.loads((PLUGIN_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
     assert data["name"] == "llm-wiki"
-    assert data["version"] == "0.9.2"
+    assert data["version"] == "0.9.3"
     assert data["license"] == "MIT"
     assert "Doggy-Footprint" in json.dumps(data["author"])
     assert data["repository"] == "https://github.com/Doggy-Footprint/llm-wiki-plugin"
@@ -231,7 +231,7 @@ def test_O16_Y6_pep723_block_in_header():
 
 def test_O12_plugin_json_version_and_description():
     data = json.loads((PLUGIN_ROOT / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
-    assert data["version"] == "0.9.2"
+    assert data["version"] == "0.9.3"
     desc = data["description"].lower()
     for name in NAMES:
         assert re.search(rf"(?<![\w-]){re.escape(name)}(?![\w-])", desc), name
