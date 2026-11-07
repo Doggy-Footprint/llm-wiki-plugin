@@ -6,26 +6,24 @@ disable-model-invocation: true
 
 # wiki-insight: keep a realization as a question-titled insight page
 
-Talk with the user in Korean and write page content in Korean. Korean headings and quoted phrases below are literal strings; write them exactly as given.
+Talk with the user and write page content in Korean. Korean headings and quoted phrases below are literal strings; write them exactly as given.
 
-An insight page (`type: insight`) holds one question about the user and how their answer to it changes over time:
+An insight page (`type: insight`) holds one question about the user and how their answer changes:
 - a title phrased as a question, not a conclusion (e.g. "아침 커피와 집중", not "커피가 집중을 높인다");
 - "지금 생각": the current thinking in one or two sentences, in the user's words; rewritten when the thinking changes;
 - "생각의 변화": append-only dated lines of what the user said;
 - `confidence`: `hunch` (감), `likely` (꽤 믿음), or `tested` (only when "근거" holds script or experiment results);
 - `status: obsolete` pages are never updated by this skill.
 
-Pages live in `wiki/life/insights/` or `wiki/career/insights/` under the wiki root. The page template is the root's `templates/insight.md`, or the built-in `insight.md` next to this file.
+Pages live in `<root>/wiki/life/insights/` or `<root>/wiki/career/insights/`; the template is `<root>/templates/insight.md`, or the built-in `insight.md` next to this file.
 
 ## (a) Settle the wiki root
 
-Every read and write goes to one wiki, `<root>`. Settle it before anything else.
-
 1. Run `uv run "<skill dir>/../wiki-add/learn.py" env` (`python3` if `uv` is missing; `<skill dir>` is the "Base directory" Claude Code reports when this skill loads) and take `mode`, `root`, and `has_wiki`. If the wiki-add skill is not installed alongside, use `git rev-parse --show-toplevel` as `root`, `local` as `mode`, and whether `<root>/wiki/index.md` exists as `has_wiki`.
 2. If `mode` is `chat`, this is a claude.ai chat, or commands cannot run, do not follow this file; follow only `claude-ai.md`.
-3. If `has_wiki` is false, tell the user that `root` holds no wiki and stop. Do not look for a wiki anywhere else.
+3. If `has_wiki` is false, tell the user that `root` holds no wiki and stop. Do not look for a wiki elsewhere.
 
-Every command below passes `--root <root>`. The tool is `uv run "<skill dir>/insight.py" --root <root> <subcommand> ...` (standard library only, so `python3` works too). It prints one line of JSON; on failure it prints a message to stderr and exits with code 2.
+Every command below passes `--root <root>`. The tool is `uv run "<skill dir>/insight.py" --root <root> <subcommand> ...` (standard library only, so `python3` works too). It prints one line of JSON; on failure, a message on stderr and exit code 2.
 
 ## (b) `/wiki-insight import <file>`
 
@@ -45,7 +43,7 @@ If the argument is `import <file>`, run only `insight.py --root <root> import <f
 
 ## (e) Confirm and write
 
-Show the title, area (new pages), 지금 생각, the 생각의 변화 line (`- 날짜: 사용자 말`), confidence, and links (`[[제목]] — 관계`, only pages that exist or concepts worth a page). Get confirmation; do not write before it. Then run:
+Show the title, area (new pages), 지금 생각, the 생각의 변화 line (`- 날짜: 사용자 말`), confidence, and links (`[[제목]] — 관계`, only pages that exist or concepts worth a page). Write nothing before the user confirms. Then run:
 
 ```
 uv run "<skill dir>/insight.py" --root <root> result "<제목>" --said "<사용자 말>" --out <임시 폴더> \
